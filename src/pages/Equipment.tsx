@@ -18,6 +18,10 @@ interface Equipment {
   district: string;
   image_url: string;
   is_available: boolean;
+  current_booking?: {
+    start_date: string;
+    end_date: string;
+  } | null;
 }
 
 const Equipment = () => {
@@ -33,14 +37,43 @@ const Equipment = () => {
 
   const fetchEquipment = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: equipmentData, error: equipmentError } = await supabase
         .from("equipment")
         .select("*")
         .eq("status", "approved")
         .eq("is_available", true);
 
-      if (error) throw error;
-      setEquipment(data || []);
+      if (equipmentError) throw equipmentError;
+
+      // Fetch current bookings for all equipment
+      const equipmentIds = equipmentData?.map(e => e.id) || [];
+      const { data: bookingsData } = await supabase
+        .from("bookings")
+        .select("equipment_id, start_date, end_date")
+        .in("equipment_id", equipmentIds)
+        .in("status", ["pending", "confirmed"])
+        .gte("end_date", new Date().toISOString().split('T')[0]);
+
+      // Map bookings to equipment
+      const equipmentWithBookings = equipmentData?.map(eq => {
+        const currentBooking = bookingsData?.find(b => 
+          b.equipment_id === eq.id && 
+          new Date(b.start_date) <= new Date() && 
+          new Date(b.end_date) >= new Date()
+        );
+        
+        const nextBooking = bookingsData?.find(b => 
+          b.equipment_id === eq.id && 
+          new Date(b.start_date) > new Date()
+        );
+
+        return {
+          ...eq,
+          current_booking: currentBooking || nextBooking || null
+        };
+      });
+
+      setEquipment(equipmentWithBookings || []);
     } catch (error) {
       console.error("Error fetching equipment:", error);
     } finally {
@@ -124,6 +157,13 @@ const Equipment = () => {
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                       No image available
+                    </div>
+                  )}
+                  {item.current_booking && (
+                    <div className="absolute top-2 right-2">
+                      <Badge variant="destructive" className="shadow-lg">
+                        Booked until {new Date(item.current_booking.end_date).toLocaleDateString()}
+                      </Badge>
                     </div>
                   )}
                 </div>

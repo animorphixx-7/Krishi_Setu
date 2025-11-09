@@ -19,6 +19,7 @@ const EquipmentDetail = () => {
   const { user } = useAuth();
   const [equipment, setEquipment] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
@@ -28,6 +29,7 @@ const EquipmentDetail = () => {
     if (id) {
       fetchEquipment();
       fetchReviews();
+      fetchBookings();
     }
   }, [id]);
 
@@ -70,6 +72,37 @@ const EquipmentDetail = () => {
     }
   };
 
+  const fetchBookings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("start_date, end_date, status")
+        .eq("equipment_id", id)
+        .in("status", ["pending", "confirmed"]);
+
+      if (error) throw error;
+      setBookings(data || []);
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+    }
+  };
+
+  const isDateBooked = (date: Date) => {
+    return bookings.some((booking) => {
+      const start = new Date(booking.start_date);
+      const end = new Date(booking.end_date);
+      return date >= start && date <= end;
+    });
+  };
+
+  const checkBookingOverlap = (start: Date, end: Date) => {
+    return bookings.some((booking) => {
+      const bookingStart = new Date(booking.start_date);
+      const bookingEnd = new Date(booking.end_date);
+      return (start <= bookingEnd && end >= bookingStart);
+    });
+  };
+
   const handleBooking = async () => {
     if (!user) {
       toast.error("Please login to book equipment");
@@ -84,6 +117,11 @@ const EquipmentDetail = () => {
 
     if (startDate >= endDate) {
       toast.error("End date must be after start date");
+      return;
+    }
+
+    if (checkBookingOverlap(startDate, endDate)) {
+      toast.error("Equipment is already booked for selected dates. Please choose different dates.");
       return;
     }
 
@@ -105,6 +143,9 @@ const EquipmentDetail = () => {
       if (error) throw error;
       
       toast.success("Booking request sent successfully!");
+      fetchBookings(); // Refresh bookings
+      setStartDate(undefined);
+      setEndDate(undefined);
       navigate("/my-bookings");
     } catch (error: any) {
       toast.error(error.message || "Failed to create booking");
@@ -226,6 +267,13 @@ const EquipmentDetail = () => {
                 <CardTitle>Book this Equipment</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {bookings.length > 0 && (
+                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+                      ⚠️ This equipment has active bookings. Booked dates are disabled in the calendar.
+                    </p>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Start Date</Label>
@@ -233,7 +281,7 @@ const EquipmentDetail = () => {
                       mode="single"
                       selected={startDate}
                       onSelect={setStartDate}
-                      disabled={(date) => date < new Date()}
+                      disabled={(date) => date < new Date() || isDateBooked(date)}
                       className="rounded-md border mt-2"
                     />
                   </div>
@@ -243,7 +291,7 @@ const EquipmentDetail = () => {
                       mode="single"
                       selected={endDate}
                       onSelect={setEndDate}
-                      disabled={(date) => date < new Date()}
+                      disabled={(date) => date < new Date() || isDateBooked(date)}
                       className="rounded-md border mt-2"
                     />
                   </div>
