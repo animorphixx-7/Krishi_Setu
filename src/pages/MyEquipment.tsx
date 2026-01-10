@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2 } from "lucide-react";
+import { equipmentSchema, type EquipmentFormData } from "@/lib/validation";
 
 interface Equipment {
   id: string;
@@ -26,6 +27,16 @@ interface Equipment {
   is_available: boolean;
 }
 
+interface FormErrors {
+  name?: string;
+  description?: string;
+  category?: string;
+  district?: string;
+  price_per_day?: string;
+  contact_number?: string;
+  image_url?: string;
+}
+
 const MyEquipment = () => {
   const { user, userRole } = useAuth();
   const navigate = useNavigate();
@@ -33,6 +44,7 @@ const MyEquipment = () => {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -73,12 +85,44 @@ const MyEquipment = () => {
     }
   };
 
+  const validateForm = (): boolean => {
+    const result = equipmentSchema.safeParse(formData);
+    
+    if (!result.success) {
+      const errors: FormErrors = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof FormErrors;
+        errors[field] = err.message;
+      });
+      setFormErrors(errors);
+      return false;
+    }
+    
+    setFormErrors({});
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase.from("equipment").insert({
-        ...formData,
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        category: formData.category.trim(),
+        district: formData.district.trim(),
         price_per_day: parseFloat(formData.price_per_day),
+        contact_number: formData.contact_number.trim(),
+        image_url: formData.image_url.trim() || null,
         owner_id: user?.id,
       });
 
@@ -98,6 +142,7 @@ const MyEquipment = () => {
         contact_number: "",
         image_url: "",
       });
+      setFormErrors({});
       fetchEquipment();
     } catch (error) {
       console.error("Error adding equipment:", error);
@@ -166,36 +211,58 @@ const MyEquipment = () => {
                   <Input
                     id="name"
                     required
+                    maxLength={100}
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className={formErrors.name ? "border-destructive" : ""}
                   />
+                  {formErrors.name && (
+                    <p className="text-sm text-destructive mt-1">{formErrors.name}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">{formData.name.length}/100 characters</p>
                 </div>
                 <div>
                   <Label htmlFor="category">Category</Label>
                   <Input
                     id="category"
                     required
+                    maxLength={50}
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     placeholder="e.g., Tractor, Harvester"
+                    className={formErrors.category ? "border-destructive" : ""}
                   />
+                  {formErrors.category && (
+                    <p className="text-sm text-destructive mt-1">{formErrors.category}</p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="description">Description</Label>
                   <Textarea
                     id="description"
+                    maxLength={1000}
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className={formErrors.description ? "border-destructive" : ""}
                   />
+                  {formErrors.description && (
+                    <p className="text-sm text-destructive mt-1">{formErrors.description}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">{formData.description.length}/1000 characters</p>
                 </div>
                 <div>
                   <Label htmlFor="district">District</Label>
                   <Input
                     id="district"
                     required
+                    maxLength={50}
                     value={formData.district}
                     onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                    className={formErrors.district ? "border-destructive" : ""}
                   />
+                  {formErrors.district && (
+                    <p className="text-sm text-destructive mt-1">{formErrors.district}</p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="price">Price per Day (₹)</Label>
@@ -203,9 +270,15 @@ const MyEquipment = () => {
                     id="price"
                     type="number"
                     required
+                    min="1"
+                    max="100000"
                     value={formData.price_per_day}
                     onChange={(e) => setFormData({ ...formData, price_per_day: e.target.value })}
+                    className={formErrors.price_per_day ? "border-destructive" : ""}
                   />
+                  {formErrors.price_per_day && (
+                    <p className="text-sm text-destructive mt-1">{formErrors.price_per_day}</p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="contact">Contact Number</Label>
@@ -213,19 +286,31 @@ const MyEquipment = () => {
                     id="contact"
                     type="tel"
                     required
+                    maxLength={10}
+                    placeholder="10-digit mobile number"
                     value={formData.contact_number}
-                    onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, contact_number: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                    className={formErrors.contact_number ? "border-destructive" : ""}
                   />
+                  {formErrors.contact_number && (
+                    <p className="text-sm text-destructive mt-1">{formErrors.contact_number}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">Enter a valid 10-digit Indian mobile number starting with 6-9</p>
                 </div>
                 <div>
-                  <Label htmlFor="image">Image URL</Label>
+                  <Label htmlFor="image">Image URL (optional)</Label>
                   <Input
                     id="image"
                     type="url"
+                    maxLength={500}
                     value={formData.image_url}
                     onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                     placeholder="https://example.com/image.jpg"
+                    className={formErrors.image_url ? "border-destructive" : ""}
                   />
+                  {formErrors.image_url && (
+                    <p className="text-sm text-destructive mt-1">{formErrors.image_url}</p>
+                  )}
                 </div>
                 <Button type="submit" className="w-full">Add Equipment</Button>
               </form>
