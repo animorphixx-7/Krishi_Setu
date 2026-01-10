@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
-import { MapPin, IndianRupee, Phone, Star } from "lucide-react";
+import { MapPin, IndianRupee, Phone, Star, Lock } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { reviewSchema } from "@/lib/validation";
 
 const EquipmentDetail = () => {
   const { id } = useParams();
@@ -24,14 +25,17 @@ const EquipmentDetail = () => {
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [hasActiveBooking, setHasActiveBooking] = useState(false);
 
   useEffect(() => {
     if (id) {
       fetchEquipment();
       fetchReviews();
       fetchBookings();
+      checkUserBooking();
     }
-  }, [id]);
+  }, [id, user]);
 
   const fetchEquipment = async () => {
     try {
@@ -39,7 +43,7 @@ const EquipmentDetail = () => {
         .from("equipment")
         .select(`
           *,
-          profiles:owner_id (full_name, phone)
+          profiles:owner_id (full_name)
         `)
         .eq("id", id)
         .single();
@@ -51,6 +55,24 @@ const EquipmentDetail = () => {
       toast.error("Failed to load equipment details");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkUserBooking = async () => {
+    if (!user || !id) return;
+    
+    try {
+      const { data } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("equipment_id", id)
+        .eq("user_id", user.id)
+        .in("status", ["pending", "confirmed"])
+        .limit(1);
+      
+      setHasActiveBooking((data?.length || 0) > 0);
+    } catch (error) {
+      console.error("Error checking user booking:", error);
     }
   };
 
@@ -143,7 +165,8 @@ const EquipmentDetail = () => {
       if (error) throw error;
       
       toast.success("Booking request sent successfully!");
-      fetchBookings(); // Refresh bookings
+      fetchBookings();
+      checkUserBooking();
       setStartDate(undefined);
       setEndDate(undefined);
       navigate("/my-bookings");
@@ -158,6 +181,14 @@ const EquipmentDetail = () => {
       return;
     }
 
+    // Validate review
+    const result = reviewSchema.safeParse(newReview);
+    if (!result.success) {
+      setReviewError(result.error.errors[0]?.message || "Invalid review");
+      return;
+    }
+    setReviewError(null);
+
     try {
       const { error } = await supabase
         .from("reviews")
@@ -165,7 +196,7 @@ const EquipmentDetail = () => {
           equipment_id: id,
           user_id: user.id,
           rating: newReview.rating,
-          comment: newReview.comment,
+          comment: newReview.comment.trim(),
         });
 
       if (error) throw error;
@@ -180,6 +211,27 @@ const EquipmentDetail = () => {
         toast.error("Failed to submit review");
       }
     }
+  };
+
+  const getMaskedContact = () => {
+    if (!equipment?.contact_number) return "Not available";
+    
+    // Owner always sees full contact
+    if (user?.id === equipment.owner_id) {
+      return equipment.contact_number;
+    }
+    
+    // User with active booking sees full contact
+    if (hasActiveBooking) {
+      return equipment.contact_number;
+    }
+    
+    // Others see masked version
+    const contact = equipment.contact_number;
+    if (contact.length > 4) {
+      return contact.substring(0, 2) + "******" + contact.substring(contact.length - 2);
+    }
+    return "**********";
   };
 
   if (loading) {
@@ -203,6 +255,8 @@ const EquipmentDetail = () => {
   const averageRating = reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : "No ratings";
+
+  const isContactMasked = !user || (user.id !== equipment.owner_id && !hasActiveBooking);
 
   return (
     <div className="min-h-screen bg-background">
@@ -256,9 +310,20 @@ const EquipmentDetail = () => {
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Contact</p>
                 <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  <span className="font-semibold">{equipment.contact_number}</span>
+                  {isContactMasked ? (
+                    <Lock className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Phone className="h-4 w-4" />
+                  )}
+                  <span className={`font-semibold ${isContactMasked ? "text-muted-foreground" : ""}`}>
+                    {getMaskedContact()}
+                  </span>
                 </div>
+                {isContactMasked && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Book to see full contact
+                  </p>
+                )}
               </div>
             </div>
 
@@ -344,7 +409,15 @@ const EquipmentDetail = () => {
                   onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
                   placeholder="Share your experience..."
                   rows={3}
+                  maxLength={500}
+                  className={reviewError ? "border-destructive" : ""}
                 />
+                <div className="flex justify-between mt-1">
+                  {reviewError && (
+                    <p className="text-sm text-destructive">{reviewError}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground ml-auto">{newReview.comment.length}/500 characters</p>
+                </div>
               </div>
               <Button onClick={handleReviewSubmit}>Submit Review</Button>
             </CardContent>

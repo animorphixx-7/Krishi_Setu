@@ -8,6 +8,7 @@ import { MessageSquare, Send, Phone, Mail } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { messageSchema } from "@/lib/validation";
 
 interface Message {
   id: string;
@@ -22,6 +23,7 @@ const Helpline = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [messageError, setMessageError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -55,10 +57,13 @@ const Helpline = () => {
       return;
     }
 
-    if (!message.trim()) {
-      toast.error("Please enter a message");
+    // Validate message
+    const result = messageSchema.safeParse({ message });
+    if (!result.success) {
+      setMessageError(result.error.errors[0]?.message || "Invalid message");
       return;
     }
+    setMessageError(null);
 
     setLoading(true);
     try {
@@ -131,12 +136,20 @@ const Helpline = () => {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Textarea
-                  placeholder="Type your message here..."
+                  placeholder="Type your message here... (10-1000 characters)"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={6}
                   disabled={!user}
+                  maxLength={1000}
+                  className={messageError ? "border-destructive" : ""}
                 />
+                <div className="flex justify-between">
+                  {messageError && (
+                    <p className="text-sm text-destructive">{messageError}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground ml-auto">{message.length}/1000 characters</p>
+                </div>
                 {!user && (
                   <p className="text-sm text-amber-600">
                     Please <Button variant="link" className="px-1" onClick={() => navigate("/auth")}>login</Button> to send messages

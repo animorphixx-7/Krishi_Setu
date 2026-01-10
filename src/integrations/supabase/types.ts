@@ -281,6 +281,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_masked_contact: {
+        Args: { contact: string; equipment_owner_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
