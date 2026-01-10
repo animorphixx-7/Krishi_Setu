@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import NotificationBell from "@/components/NotificationBell";
 
 const Navbar = () => {
   const { user, userRole, signOut } = useAuth();
@@ -69,6 +70,7 @@ const Navbar = () => {
 
         {/* User Menu / Auth Buttons */}
         <div className="flex items-center space-x-2">
+          {user && <NotificationBell />}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
