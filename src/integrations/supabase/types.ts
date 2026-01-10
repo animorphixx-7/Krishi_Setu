@@ -180,6 +180,42 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          reference_id: string | null
+          reference_type: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          reference_id?: string | null
+          reference_type?: string | null
+          title: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -292,10 +328,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      send_notification: {
+        Args: {
+          _message: string
+          _reference_id?: string
+          _reference_type?: string
+          _title: string
+          _type: Database["public"]["Enums"]["notification_type"]
+          _user_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       booking_status: "pending" | "confirmed" | "completed" | "cancelled"
       equipment_status: "pending" | "approved" | "rejected" | "unavailable"
+      notification_type: "booking" | "price_update" | "system" | "reminder"
       user_role: "farmer" | "equipment_owner" | "admin"
     }
     CompositeTypes: {
@@ -426,6 +474,7 @@ export const Constants = {
     Enums: {
       booking_status: ["pending", "confirmed", "completed", "cancelled"],
       equipment_status: ["pending", "approved", "rejected", "unavailable"],
+      notification_type: ["booking", "price_update", "system", "reminder"],
       user_role: ["farmer", "equipment_owner", "admin"],
     },
   },
