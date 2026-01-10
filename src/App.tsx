@@ -10,6 +10,7 @@ import Equipment from "./pages/Equipment";
 import EquipmentDetail from "./pages/EquipmentDetail";
 import MarketPrices from "./pages/MarketPrices";
 import Weather from "./pages/Weather";
+import CropCalendar from "./pages/CropCalendar";
 import Helpline from "./pages/Helpline";
 import Admin from "./pages/Admin";
 import MyEquipment from "./pages/MyEquipment";
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/equipment/:id" element={<EquipmentDetail />} />
             <Route path="/market-prices" element={<MarketPrices />} />
             <Route path="/weather" element={<Weather />} />
+            <Route path="/crop-calendar" element={<CropCalendar />} />
             <Route path="/helpline" element={<Helpline />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/my-equipment" element={<MyEquipment />} />
