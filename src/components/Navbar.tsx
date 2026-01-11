@@ -20,6 +20,7 @@ const Navbar = () => {
     { to: "/market-prices", label: "Market Prices" },
     { to: "/weather", label: "Weather" },
     { to: "/crop-calendar", label: "Crop Calendar" },
+    { to: "/crop-comparison", label: "Compare Crops" },
     { to: "/helpline", label: "Helpline" },
   ];
 
