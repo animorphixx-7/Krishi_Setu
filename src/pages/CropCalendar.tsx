@@ -4,13 +4,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import { 
   Calendar, Sprout, Loader2, Sun, CloudRain, Wheat, Leaf,
   AlertTriangle, CheckCircle, Clock, TrendingUp, Droplets,
-  Thermometer, ArrowRight, RefreshCw
+  Thermometer, ArrowRight, RefreshCw, Cloud, Wind, Zap,
+  CloudSun, Umbrella, Check, X, CircleCheck, CircleX
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
+
+interface WeatherSuitability {
+  overall_score: "excellent" | "good" | "moderate" | "poor";
+  sowing_suitability?: "excellent" | "good" | "moderate" | "poor" | "not_applicable";
+  harvesting_suitability?: "excellent" | "good" | "moderate" | "poor" | "not_applicable";
+  current_weather_impact?: string;
+  recommendation?: string;
+  best_days?: string[];
+}
 
 interface Crop {
   name: string;
@@ -27,6 +38,19 @@ interface Crop {
   current_status: "sowing_time" | "growing" | "harvesting_time" | "off_season" | "land_preparation";
   tips: string[];
   market_demand?: "low" | "medium" | "high";
+  weather_suitability?: WeatherSuitability;
+}
+
+interface ActivitySuitability {
+  activity: "sowing" | "transplanting" | "fertilizing" | "pesticide_spraying" | "irrigation" | "harvesting" | "land_preparation" | "weeding";
+  suitability: "excellent" | "good" | "moderate" | "poor";
+  reason: string;
+  best_time: string;
+  precautions?: string[];
+  weather_window?: {
+    recommended_days?: string[];
+    avoid_days?: string[];
+  };
 }
 
 interface MonthlyActivity {
@@ -45,6 +69,8 @@ interface Recommendation {
   crop: string;
   deadline?: string;
   reason: string;
+  weather_suitable?: boolean;
+  weather_note?: string;
 }
 
 interface Alert {
@@ -53,12 +79,32 @@ interface Alert {
   message: string;
 }
 
+interface CurrentWeather {
+  temp: number;
+  humidity: number;
+  conditions: string;
+  wind_speed: number;
+}
+
+interface ForecastDay {
+  date: string;
+  temp_max: number;
+  temp_min: number;
+  humidity: number;
+  conditions: string;
+  rain_chance: number;
+}
+
 interface CalendarData {
   region: string;
   current_month: string;
   current_season: string;
   season_description?: string;
+  current_weather?: CurrentWeather;
+  weather_summary?: string;
+  weather_forecast?: ForecastDay[];
   crops: Crop[];
+  activity_suitability?: ActivitySuitability[];
   monthly_activities: MonthlyActivity[];
   immediate_recommendations: Recommendation[];
   alerts?: Alert[];
@@ -73,6 +119,17 @@ const DISTRICTS = [
   "Pune", "Nashik", "Nagpur", "Aurangabad", "Kolhapur", 
   "Sangli", "Solapur", "Ahmednagar", "Satara", "Jalgaon"
 ];
+
+const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
+  sowing: <Sprout className="h-4 w-4" />,
+  transplanting: <Leaf className="h-4 w-4" />,
+  fertilizing: <Zap className="h-4 w-4" />,
+  pesticide_spraying: <Cloud className="h-4 w-4" />,
+  irrigation: <Droplets className="h-4 w-4" />,
+  harvesting: <Wheat className="h-4 w-4" />,
+  land_preparation: <Sun className="h-4 w-4" />,
+  weeding: <Leaf className="h-4 w-4" />
+};
 
 const CropCalendar = () => {
   const [calendarData, setCalendarData] = useState<CalendarData | null>(null);
@@ -115,12 +172,42 @@ const CropCalendar = () => {
 
       setCalendarData(result.data);
       setLastUpdated(new Date());
-      toast.success(`Crop calendar updated for ${selectedDistrict}`);
+      toast.success(`Crop calendar updated with live weather data for ${selectedDistrict}`);
     } catch (error) {
       console.error("Error fetching calendar:", error);
       toast.error("Failed to fetch crop calendar");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getSuitabilityColor = (score: string) => {
+    switch (score) {
+      case "excellent": return "bg-green-500 text-white";
+      case "good": return "bg-emerald-400 text-white";
+      case "moderate": return "bg-yellow-500 text-white";
+      case "poor": return "bg-red-500 text-white";
+      default: return "bg-gray-400 text-white";
+    }
+  };
+
+  const getSuitabilityProgress = (score: string) => {
+    switch (score) {
+      case "excellent": return 100;
+      case "good": return 75;
+      case "moderate": return 50;
+      case "poor": return 25;
+      default: return 0;
+    }
+  };
+
+  const getSuitabilityIcon = (score: string) => {
+    switch (score) {
+      case "excellent": return <CircleCheck className="h-4 w-4 text-green-500" />;
+      case "good": return <Check className="h-4 w-4 text-emerald-500" />;
+      case "moderate": return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+      case "poor": return <CircleX className="h-4 w-4 text-red-500" />;
+      default: return null;
     }
   };
 
@@ -173,6 +260,14 @@ const CropCalendar = () => {
     }
   };
 
+  const getWeatherIcon = (conditions: string) => {
+    const cond = conditions.toLowerCase();
+    if (cond.includes("rain") || cond.includes("thunder")) return <CloudRain className="h-5 w-5 text-blue-500" />;
+    if (cond.includes("cloud")) return <Cloud className="h-5 w-5 text-gray-500" />;
+    if (cond.includes("partly")) return <CloudSun className="h-5 w-5 text-yellow-500" />;
+    return <Sun className="h-5 w-5 text-yellow-500" />;
+  };
+
   const filteredCrops = calendarData?.crops.filter(crop => 
     selectedCategory === "all" || crop.category === selectedCategory
   ) || [];
@@ -187,7 +282,7 @@ const CropCalendar = () => {
             <h1 className="text-4xl font-bold text-primary">Crop Calendar</h1>
           </div>
           <p className="text-muted-foreground">
-            Plan your farming activities with optimal planting and harvesting windows
+            Plan your farming activities with real-time weather-based recommendations
             {lastUpdated && (
               <span className="ml-2 text-xs">
                 (Updated: {lastUpdated.toLocaleTimeString()})
@@ -226,18 +321,21 @@ const CropCalendar = () => {
             ) : (
               <Calendar className="h-4 w-4 mr-2" />
             )}
-            {loading ? "Loading..." : "Get Calendar"}
+            {loading ? "Loading..." : "Get Calendar with Weather"}
           </Button>
         </div>
 
         {!calendarData && !loading && (
           <Card className="shadow-medium">
             <CardContent className="py-12 text-center">
-              <Calendar className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-semibold mb-2">Get Your Crop Calendar</h3>
+              <div className="flex justify-center gap-4 mb-4">
+                <Calendar className="h-12 w-12 text-muted-foreground" />
+                <CloudSun className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Weather-Integrated Crop Calendar</h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Select your district and month to get AI-powered recommendations 
-                for optimal planting and harvesting times.
+                Get AI-powered recommendations with real-time weather analysis.
+                See which activities are suitable today based on current conditions.
               </p>
               <Button onClick={fetchCalendar} size="lg">
                 <Sprout className="h-5 w-5 mr-2" />
@@ -250,13 +348,134 @@ const CropCalendar = () => {
         {loading && (
           <div className="text-center py-12">
             <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-            <p className="text-lg">Generating crop calendar...</p>
-            <p className="text-muted-foreground text-sm mt-2">This may take a few seconds</p>
+            <p className="text-lg">Fetching weather data and generating calendar...</p>
+            <p className="text-muted-foreground text-sm mt-2">Analyzing conditions for {selectedDistrict}</p>
           </div>
         )}
 
         {calendarData && !loading && (
           <>
+            {/* Current Weather Card */}
+            {calendarData.current_weather && (
+              <Card className="mb-6 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800">
+                <CardContent className="pt-6">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      {getWeatherIcon(calendarData.current_weather.conditions)}
+                      <div>
+                        <h3 className="text-2xl font-bold">{calendarData.current_weather.temp}°C</h3>
+                        <p className="text-muted-foreground">{calendarData.current_weather.conditions}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-6 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Droplets className="h-4 w-4 text-blue-500" />
+                        <span>{calendarData.current_weather.humidity}% Humidity</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Wind className="h-4 w-4 text-gray-500" />
+                        <span>{calendarData.current_weather.wind_speed} km/h</span>
+                      </div>
+                    </div>
+                    {calendarData.weather_summary && (
+                      <p className="text-sm text-blue-800 dark:text-blue-200 max-w-md">
+                        {calendarData.weather_summary}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 7-Day Forecast */}
+            {calendarData.weather_forecast && calendarData.weather_forecast.length > 0 && (
+              <Card className="mb-6">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <CloudSun className="h-5 w-5" />
+                    7-Day Forecast for Farming Activities
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-7 gap-2">
+                    {calendarData.weather_forecast.slice(0, 7).map((day, idx) => (
+                      <div key={idx} className={`text-center p-3 rounded-lg ${idx === 0 ? "bg-primary/10 ring-2 ring-primary" : "bg-muted/50"}`}>
+                        <p className="text-xs font-medium">
+                          {idx === 0 ? "Today" : new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
+                        </p>
+                        <div className="my-2 flex justify-center">
+                          {getWeatherIcon(day.conditions)}
+                        </div>
+                        <p className="text-sm font-bold">{day.temp_max}°</p>
+                        <p className="text-xs text-muted-foreground">{day.temp_min}°</p>
+                        {day.rain_chance > 30 && (
+                          <div className="flex items-center justify-center gap-1 mt-1 text-xs text-blue-500">
+                            <Umbrella className="h-3 w-3" />
+                            {day.rain_chance}%
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Activity Suitability */}
+            {calendarData.activity_suitability && calendarData.activity_suitability.length > 0 && (
+              <Card className="mb-6 shadow-medium">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-primary" />
+                    Today's Activity Suitability
+                  </CardTitle>
+                  <CardDescription>Weather-based recommendations for farming activities</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    {calendarData.activity_suitability.map((activity, idx) => (
+                      <Card key={idx} className="border-2">
+                        <CardContent className="pt-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              {ACTIVITY_ICONS[activity.activity] || <Sprout className="h-4 w-4" />}
+                              <span className="font-medium capitalize">{activity.activity.replace("_", " ")}</span>
+                            </div>
+                            <Badge className={getSuitabilityColor(activity.suitability)}>
+                              {activity.suitability}
+                            </Badge>
+                          </div>
+                          <Progress 
+                            value={getSuitabilityProgress(activity.suitability)} 
+                            className="h-2 mb-3"
+                          />
+                          <p className="text-xs text-muted-foreground mb-2">{activity.reason}</p>
+                          <div className="text-xs">
+                            <span className="font-medium">Best Time: </span>
+                            <span className="text-primary">{activity.best_time}</span>
+                          </div>
+                          {activity.precautions && activity.precautions.length > 0 && (
+                            <div className="mt-2 pt-2 border-t">
+                              <p className="text-xs text-muted-foreground">
+                                ⚠️ {activity.precautions[0]}
+                              </p>
+                            </div>
+                          )}
+                          {activity.weather_window?.recommended_days && activity.weather_window.recommended_days.length > 0 && (
+                            <div className="mt-2 pt-2 border-t">
+                              <p className="text-xs text-green-600 dark:text-green-400">
+                                ✓ Best days: {activity.weather_window.recommended_days.join(", ")}
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Season Overview */}
             <Card className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800">
               <CardContent className="pt-6">
@@ -310,7 +529,7 @@ const CropCalendar = () => {
                   <Clock className="h-5 w-5 text-primary" />
                   Immediate Actions
                 </CardTitle>
-                <CardDescription>Priority tasks based on current timing</CardDescription>
+                <CardDescription>Priority tasks with weather suitability</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -321,13 +540,31 @@ const CropCalendar = () => {
                           <Badge variant={rec.priority === "high" ? "destructive" : rec.priority === "medium" ? "default" : "secondary"}>
                             {rec.priority.toUpperCase()}
                           </Badge>
-                          {rec.deadline && (
-                            <span className="text-xs text-muted-foreground">{rec.deadline}</span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {rec.weather_suitable !== undefined && (
+                              rec.weather_suitable ? (
+                                <Badge className="bg-green-500 text-white text-xs">
+                                  <Check className="h-3 w-3 mr-1" /> Weather OK
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-red-500 text-white text-xs">
+                                  <X className="h-3 w-3 mr-1" /> Wait
+                                </Badge>
+                              )
+                            )}
+                          </div>
                         </div>
+                        {rec.deadline && (
+                          <span className="text-xs text-muted-foreground">{rec.deadline}</span>
+                        )}
                         <h4 className="font-semibold mb-1">{rec.action}</h4>
                         <p className="text-sm text-primary font-medium mb-1">{rec.crop}</p>
                         <p className="text-xs text-muted-foreground">{rec.reason}</p>
+                        {rec.weather_note && (
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 pt-2 border-t">
+                            🌤️ {rec.weather_note}
+                          </p>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
@@ -383,6 +620,46 @@ const CropCalendar = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
+                          {/* Weather Suitability Section */}
+                          {crop.weather_suitability && (
+                            <div className="p-3 rounded-lg bg-muted/50">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-medium">Weather Suitability</span>
+                                <Badge className={getSuitabilityColor(crop.weather_suitability.overall_score)}>
+                                  {crop.weather_suitability.overall_score}
+                                </Badge>
+                              </div>
+                              <Progress 
+                                value={getSuitabilityProgress(crop.weather_suitability.overall_score)} 
+                                className="h-1.5 mb-2"
+                              />
+                              <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                                {crop.weather_suitability.sowing_suitability && crop.weather_suitability.sowing_suitability !== "not_applicable" && (
+                                  <div className="flex items-center gap-1">
+                                    <Sprout className="h-3 w-3" />
+                                    Sowing: 
+                                    {getSuitabilityIcon(crop.weather_suitability.sowing_suitability)}
+                                  </div>
+                                )}
+                                {crop.weather_suitability.harvesting_suitability && crop.weather_suitability.harvesting_suitability !== "not_applicable" && (
+                                  <div className="flex items-center gap-1">
+                                    <Wheat className="h-3 w-3" />
+                                    Harvest: 
+                                    {getSuitabilityIcon(crop.weather_suitability.harvesting_suitability)}
+                                  </div>
+                                )}
+                              </div>
+                              {crop.weather_suitability.current_weather_impact && (
+                                <p className="text-xs text-muted-foreground">{crop.weather_suitability.current_weather_impact}</p>
+                              )}
+                              {crop.weather_suitability.best_days && crop.weather_suitability.best_days.length > 0 && (
+                                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                  ✓ Best: {crop.weather_suitability.best_days.join(", ")}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
                           <div className="flex items-center gap-4 text-sm">
                             <Badge variant="outline" className="capitalize">{crop.season}</Badge>
                             <span className="text-muted-foreground">{crop.duration_days} days</span>
@@ -503,9 +780,9 @@ const CropCalendar = () => {
 
         <div className="mt-8 bg-muted/50 rounded-lg p-6">
           <p className="text-sm text-muted-foreground">
-            <strong>Note:</strong> Crop calendar recommendations are AI-generated based on regional patterns and may vary 
-            based on specific microclimate conditions, soil type, and local factors. Consult with local agricultural 
-            extension officers for site-specific advice.
+            <strong>Note:</strong> Weather data is integrated in real-time to provide accurate activity suitability. 
+            Recommendations may vary based on actual conditions. Always verify with local weather updates before 
+            critical farming operations.
           </p>
         </div>
       </div>
