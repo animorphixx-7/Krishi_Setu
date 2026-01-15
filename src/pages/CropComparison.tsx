@@ -9,7 +9,7 @@ import {
   Scale, Loader2, Sun, CloudRain, TrendingUp, TrendingDown, Minus,
   Droplets, Clock, Trophy, AlertTriangle, CheckCircle, Star,
   Wheat, Leaf, Sprout, Target, DollarSign, Shield, ThumbsUp, ThumbsDown,
-  Database, IndianRupee
+  Database, IndianRupee, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -110,6 +110,8 @@ const AVAILABLE_CROPS = [
 const CropComparison = () => {
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [syncingPrices, setSyncingPrices] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState("Pune");
   const [selectedCrops, setSelectedCrops] = useState<string[]>([]);
 
@@ -124,6 +126,43 @@ const CropComparison = () => {
       }
       return [...prev, cropName];
     });
+  };
+
+  const syncMarketPrices = async () => {
+    setSyncingPrices(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-market-prices`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          toast.error("Rate limit exceeded. Please try again later.");
+        } else if (response.status === 402) {
+          toast.error("AI credits exhausted. Please add credits to continue.");
+        } else {
+          toast.error(result.error || "Failed to sync market prices");
+        }
+        return;
+      }
+
+      setLastSyncTime(new Date());
+      toast.success(`Market prices updated! ${result.prices?.length || 0} prices synced.`);
+    } catch (error) {
+      console.error("Error syncing prices:", error);
+      toast.error("Failed to sync market prices");
+    } finally {
+      setSyncingPrices(false);
+    }
   };
 
   const fetchComparison = async () => {
@@ -310,18 +349,41 @@ const CropComparison = () => {
               </div>
             )}
 
-            <Button 
-              onClick={fetchComparison} 
-              disabled={loading || selectedCrops.length < 2}
-              size="lg"
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Scale className="h-4 w-4 mr-2" />
+            <div className="flex flex-wrap items-center gap-3">
+              <Button 
+                onClick={fetchComparison} 
+                disabled={loading || syncingPrices || selectedCrops.length < 2}
+                size="lg"
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Scale className="h-4 w-4 mr-2" />
+                )}
+                {loading ? "Analyzing..." : "Compare Crops"}
+              </Button>
+
+              <Button 
+                onClick={syncMarketPrices} 
+                disabled={syncingPrices || loading}
+                variant="outline"
+                size="lg"
+              >
+                {syncingPrices ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                {syncingPrices ? "Syncing..." : "Sync Prices"}
+              </Button>
+
+              {lastSyncTime && (
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Database className="h-3 w-3" />
+                  Last synced: {lastSyncTime.toLocaleTimeString()}
+                </span>
               )}
-              {loading ? "Analyzing..." : "Compare Crops"}
-            </Button>
+            </div>
           </CardContent>
         </Card>
 
