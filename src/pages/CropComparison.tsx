@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Scale, Loader2, Sun, CloudRain, TrendingUp, TrendingDown, Minus,
   Droplets, Clock, Trophy, AlertTriangle, CheckCircle, Star,
-  Wheat, Leaf, Sprout, Target, DollarSign, Shield, ThumbsUp, ThumbsDown
+  Wheat, Leaf, Sprout, Target, DollarSign, Shield, ThumbsUp, ThumbsDown,
+  Database, IndianRupee
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -36,6 +37,16 @@ interface CropData {
   disadvantages: string[];
   overall_score: number;
   recommendation_rank: number;
+  actual_price_per_quintal?: number;
+}
+
+interface RealMarketPrice {
+  prices: number[];
+  markets: string[];
+  districts: string[];
+  avgPrice: number;
+  minPrice: number;
+  maxPrice: number;
 }
 
 interface ComparisonSummary {
@@ -66,6 +77,8 @@ interface ComparisonData {
   crops: CropData[];
   comparison_summary: ComparisonSummary;
   recommendation: Recommendation;
+  real_market_prices?: Record<string, RealMarketPrice>;
+  market_data_available?: boolean;
 }
 
 const DISTRICTS = [
@@ -339,6 +352,35 @@ const CropComparison = () => {
               </Card>
             )}
 
+            {/* Real Market Prices Indicator */}
+            {comparisonData.market_data_available && comparisonData.real_market_prices && (
+              <Card className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border-indigo-200 dark:border-indigo-800">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Database className="h-5 w-5 text-indigo-500" />
+                    <span className="font-semibold text-indigo-900 dark:text-indigo-100">Real Market Prices Used</span>
+                    <Badge className="bg-indigo-500">Live Data</Badge>
+                  </div>
+                  <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+                    {Object.entries(comparisonData.real_market_prices).map(([cropName, priceData]) => (
+                      <div key={cropName} className="flex items-center gap-2 p-2 bg-white/50 dark:bg-indigo-900/30 rounded-lg">
+                        <IndianRupee className="h-4 w-4 text-indigo-600" />
+                        <div className="text-sm">
+                          <span className="font-medium">{cropName}:</span>
+                          <span className="text-muted-foreground ml-1">
+                            ₹{priceData.minPrice.toLocaleString()} - ₹{priceData.maxPrice.toLocaleString()}/q
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Prices sourced from Maharashtra APMC markets for accurate profitability estimates
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Winner Card */}
             <Card className="mb-6 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border-amber-300 dark:border-amber-800">
               <CardContent className="pt-6">
@@ -453,14 +495,25 @@ const CropComparison = () => {
                         <div className="flex items-center gap-1">
                           <DollarSign className="h-4 w-4 text-emerald-500" />
                           <span className="text-sm font-medium">Profit</span>
+                          {comparisonData.real_market_prices?.[crop.name] && (
+                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-emerald-400 text-emerald-600">
+                              Real Price
+                            </Badge>
+                          )}
                         </div>
                         <span className={`text-sm font-bold ${getScoreColor(crop.profitability_score)}`}>
                           {crop.profitability_score}%
                         </span>
                       </div>
                       <Progress value={crop.profitability_score} className="h-1.5" />
+                      {comparisonData.real_market_prices?.[crop.name] && (
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+                          <IndianRupee className="h-3 w-3" />
+                          ₹{comparisonData.real_market_prices[crop.name].avgPrice.toLocaleString()}/quintal avg
+                        </p>
+                      )}
                       {crop.expected_profit_per_acre && (
-                        <p className="text-xs text-muted-foreground mt-2">{crop.expected_profit_per_acre}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{crop.expected_profit_per_acre}</p>
                       )}
                     </div>
 
@@ -614,8 +667,9 @@ const CropComparison = () => {
 
         <div className="mt-8 bg-muted/50 rounded-lg p-6">
           <p className="text-sm text-muted-foreground">
-            <strong>Note:</strong> Crop comparisons are AI-generated based on current weather conditions, 
-            market trends, and agricultural best practices. Actual results may vary based on local conditions, 
+            <strong>Note:</strong> Crop comparisons are AI-generated based on current weather conditions
+            {comparisonData?.market_data_available ? ", real market prices from Maharashtra APMCs," : ", estimated market trends,"} 
+            and agricultural best practices. Actual results may vary based on local conditions, 
             farming practices, and market fluctuations. Consult local agricultural experts for final decisions.
           </p>
         </div>
