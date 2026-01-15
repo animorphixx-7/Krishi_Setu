@@ -21,6 +21,7 @@ const Navbar = () => {
     { to: "/weather", label: "Weather" },
     { to: "/crop-calendar", label: "Crop Calendar" },
     { to: "/crop-comparison", label: "Compare Crops" },
+    { to: "/government-schemes", label: "Schemes" },
     { to: "/helpline", label: "Helpline" },
   ];
 
