@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +27,76 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Fetch real market prices from database
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { data: marketPrices, error: pricesError } = await supabase
+      .from("market_prices")
+      .select("*")
+      .order("updated_at", { ascending: false });
+
+    if (pricesError) {
+      console.error("Error fetching market prices:", pricesError);
+    }
+
+    // Create a map of crop prices for the selected crops
+    const cropPriceMap: Record<string, { 
+      prices: number[], 
+      markets: string[], 
+      districts: string[],
+      avgPrice: number,
+      minPrice: number,
+      maxPrice: number 
+    }> = {};
+
+    if (marketPrices && marketPrices.length > 0) {
+      for (const crop of crops) {
+        // Normalize crop name for matching
+        const cropLower = crop.toLowerCase().replace(/[()]/g, '').trim();
+        
+        const matchingPrices = marketPrices.filter(mp => {
+          const mpLower = mp.crop_name.toLowerCase();
+          return mpLower.includes(cropLower) || 
+                 cropLower.includes(mpLower) ||
+                 // Handle common variations
+                 (cropLower.includes('jowar') && mpLower.includes('sorghum')) ||
+                 (cropLower.includes('sorghum') && mpLower.includes('jowar')) ||
+                 (cropLower.includes('bajra') && mpLower.includes('millet')) ||
+                 (cropLower.includes('millet') && mpLower.includes('bajra')) ||
+                 (cropLower.includes('gram') && mpLower.includes('chana')) ||
+                 (cropLower.includes('chana') && mpLower.includes('gram')) ||
+                 (cropLower.includes('tur') && mpLower.includes('pigeon')) ||
+                 (cropLower.includes('pigeon') && mpLower.includes('tur')) ||
+                 (cropLower.includes('moong') && mpLower.includes('green gram')) ||
+                 (cropLower.includes('urad') && mpLower.includes('black gram'));
+        });
+
+        if (matchingPrices.length > 0) {
+          const prices = matchingPrices.map(mp => mp.price_per_quintal);
+          cropPriceMap[crop] = {
+            prices,
+            markets: matchingPrices.map(mp => mp.market_name),
+            districts: matchingPrices.map(mp => mp.district),
+            avgPrice: Math.round(prices.reduce((a, b) => a + b, 0) / prices.length),
+            minPrice: Math.min(...prices),
+            maxPrice: Math.max(...prices)
+          };
+        }
+      }
+    }
+
+    // Build market price context for AI
+    let marketPriceContext = "";
+    if (Object.keys(cropPriceMap).length > 0) {
+      marketPriceContext = "\n\nREAL MARKET PRICE DATA (from Maharashtra APMCs):\n";
+      for (const [cropName, priceData] of Object.entries(cropPriceMap)) {
+        marketPriceContext += `- ${cropName}: ₹${priceData.minPrice} - ₹${priceData.maxPrice} per quintal (avg: ₹${priceData.avgPrice}) from ${priceData.markets.slice(0, 3).join(", ")} markets\n`;
+      }
+      marketPriceContext += "\nUSE THESE ACTUAL PRICES for calculating profitability scores and expected profit per acre. Be accurate with the price ranges shown above.";
+    }
+
     // Generate realistic weather data
     const baseTemp = 25 + Math.random() * 10;
     const humidity = Math.round(55 + Math.random() * 35);
@@ -48,21 +119,23 @@ serve(async (req) => {
             - Temperature: ${Math.round(baseTemp)}°C
             - Humidity: ${humidity}%
             - Conditions: ${conditions}
+            ${marketPriceContext}
             
             Provide detailed, accurate comparisons considering:
             - Current weather suitability for each crop
-            - Market demand and price trends in Maharashtra
+            - ACTUAL market prices provided above for profitability calculations
             - Water requirements and resource efficiency
             - Risk factors and challenges
-            - Expected profitability
+            - Expected profitability based on REAL price data
             
-            Be objective and data-driven. Return ONLY valid JSON.`
+            Be objective and data-driven. Use the actual market prices provided to calculate realistic profit estimates.
+            Return ONLY valid JSON.`
           },
           {
             role: "user",
             content: `Compare these crops for a farmer in ${location}: ${crops.join(", ")}.
             
-            Provide a comprehensive comparison including weather suitability, market demand, profitability, and a clear recommendation on which crop to choose.`
+            Provide a comprehensive comparison including weather suitability, market demand, profitability (using real market prices), and a clear recommendation on which crop to choose.`
           }
         ],
         tools: [
@@ -98,6 +171,7 @@ serve(async (req) => {
                         market_demand: { type: "string", enum: ["very_high", "high", "medium", "low"] },
                         market_score: { type: "number", minimum: 0, maximum: 100 },
                         current_price_range: { type: "string" },
+                        actual_price_per_quintal: { type: "number" },
                         price_trend: { type: "string", enum: ["rising", "stable", "falling"] },
                         expected_profit_per_acre: { type: "string" },
                         profitability_score: { type: "number", minimum: 0, maximum: 100 },
@@ -137,7 +211,8 @@ serve(async (req) => {
                       caution: { type: "string" }
                     },
                     required: ["primary_choice", "confidence", "reasoning"]
-                  }
+                  },
+                  market_data_source: { type: "string" }
                 },
                 required: ["region", "crops", "comparison_summary", "recommendation"]
               }
@@ -178,6 +253,10 @@ serve(async (req) => {
     if (!comparisonData) {
       throw new Error("No comparison data received from AI");
     }
+
+    // Add real price data to the response
+    comparisonData.real_market_prices = cropPriceMap;
+    comparisonData.market_data_available = Object.keys(cropPriceMap).length > 0;
 
     return new Response(
       JSON.stringify({ 
