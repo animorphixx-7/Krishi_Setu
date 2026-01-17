@@ -8,9 +8,10 @@ import {
   Landmark, Loader2, Calendar, Clock, AlertTriangle, CheckCircle, 
   FileText, IndianRupee, Users, ExternalLink, Phone, Bell,
   Sparkles, ArrowRight, Shield, Banknote, Tractor, GraduationCap,
-  Building, TrendingUp
+  Building, TrendingUp, ClipboardCheck, Filter, X
 } from "lucide-react";
 import { toast } from "sonner";
+import EligibilityChecker from "@/components/EligibilityChecker";
 import Navbar from "@/components/Navbar";
 
 interface Scheme {
@@ -74,6 +75,9 @@ const GovernmentSchemes = () => {
   const [loading, setLoading] = useState(false);
   const [selectedDistrict, setSelectedDistrict] = useState("Pune");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [showEligibilityChecker, setShowEligibilityChecker] = useState(false);
+  const [eligibleSchemes, setEligibleSchemes] = useState<Scheme[]>([]);
+  const [filterByEligibility, setFilterByEligibility] = useState(false);
 
   const fetchSchemes = async () => {
     setLoading(true);
@@ -145,9 +149,25 @@ const GovernmentSchemes = () => {
     }
   };
 
-  const filteredSchemes = schemesData?.schemes.filter(scheme => 
+  const handleEligibleSchemes = (schemes: Scheme[]) => {
+    setEligibleSchemes(schemes);
+    if (schemes.length > 0) {
+      setFilterByEligibility(true);
+    }
+  };
+
+  const clearEligibilityFilter = () => {
+    setFilterByEligibility(false);
+    setEligibleSchemes([]);
+  };
+
+  const baseSchemes = filterByEligibility && eligibleSchemes.length > 0 
+    ? eligibleSchemes 
+    : (schemesData?.schemes || []);
+
+  const filteredSchemes = baseSchemes.filter(scheme => 
     selectedCategory === "all" || scheme.category === selectedCategory
-  ) || [];
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -193,9 +213,31 @@ const GovernmentSchemes = () => {
                 )}
                 {loading ? "Loading..." : "Find Schemes"}
               </Button>
+
+              {schemesData && !loading && (
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={() => setShowEligibilityChecker(!showEligibilityChecker)}
+                  className="gap-2"
+                >
+                  <ClipboardCheck className="h-4 w-4" />
+                  {showEligibilityChecker ? "Hide Eligibility Checker" : "Check My Eligibility"}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
+
+        {/* Eligibility Checker */}
+        {showEligibilityChecker && schemesData && (
+          <div className="mb-8">
+            <EligibilityChecker 
+              schemes={schemesData.schemes} 
+              onEligibleSchemes={handleEligibleSchemes}
+            />
+          </div>
+        )}
 
         {loading && (
           <div className="text-center py-12">
@@ -325,6 +367,25 @@ const GovernmentSchemes = () => {
                   </div>
                 </CardContent>
               </Card>
+            )}
+
+            {/* Eligibility Filter Indicator */}
+            {filterByEligibility && eligibleSchemes.length > 0 && (
+              <div className="mb-4 flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                <Filter className="h-4 w-4 text-green-600" />
+                <span className="text-sm text-green-700 dark:text-green-300">
+                  Showing <strong>{eligibleSchemes.length}</strong> schemes you're eligible for
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearEligibilityFilter}
+                  className="ml-auto h-7 text-green-700 hover:text-green-900"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Show All
+                </Button>
+              </div>
             )}
 
             {/* Schemes List */}
