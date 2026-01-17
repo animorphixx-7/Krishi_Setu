@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Tractor, User, LogOut, Menu } from "lucide-react";
+import { User, LogOut, Menu } from "lucide-react";
+import logo from "@/assets/logo.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,9 +62,8 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center space-x-2">
-          <Tractor className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold text-primary">Krishi Setu</span>
+        <Link to="/" className="flex items-center">
+          <img src={logo} alt="Krishi Setu" className="h-12 w-auto" />
         </Link>
 
         {/* Desktop Navigation */}
