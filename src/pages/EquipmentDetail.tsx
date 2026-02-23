@@ -19,6 +19,7 @@ const EquipmentDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [equipment, setEquipment] = useState<any>(null);
+  const [maskedContact, setMaskedContact] = useState<string>("**********");
   const [reviews, setReviews] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +51,15 @@ const EquipmentDetail = () => {
 
       if (error) throw error;
       setEquipment(data);
+
+      // Fetch masked contact using server-side function
+      if (data) {
+        const { data: masked } = await supabase.rpc("get_masked_contact", {
+          contact: data.contact_number || "",
+          equipment_owner_id: data.owner_id,
+        });
+        setMaskedContact(masked || "**********");
+      }
     } catch (error) {
       console.error("Error fetching equipment:", error);
       toast.error("Failed to load equipment details");
@@ -213,26 +223,7 @@ const EquipmentDetail = () => {
     }
   };
 
-  const getMaskedContact = () => {
-    if (!equipment?.contact_number) return "Not available";
-    
-    // Owner always sees full contact
-    if (user?.id === equipment.owner_id) {
-      return equipment.contact_number;
-    }
-    
-    // User with active booking sees full contact
-    if (hasActiveBooking) {
-      return equipment.contact_number;
-    }
-    
-    // Others see masked version
-    const contact = equipment.contact_number;
-    if (contact.length > 4) {
-      return contact.substring(0, 2) + "******" + contact.substring(contact.length - 2);
-    }
-    return "**********";
-  };
+  const isContactMasked = maskedContact.includes("*");
 
   if (loading) {
     return (
@@ -255,8 +246,6 @@ const EquipmentDetail = () => {
   const averageRating = reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : "No ratings";
-
-  const isContactMasked = !user || (user.id !== equipment.owner_id && !hasActiveBooking);
 
   return (
     <div className="min-h-screen bg-background">
@@ -316,7 +305,7 @@ const EquipmentDetail = () => {
                     <Phone className="h-4 w-4" />
                   )}
                   <span className={`font-semibold ${isContactMasked ? "text-muted-foreground" : ""}`}>
-                    {getMaskedContact()}
+                    {maskedContact}
                   </span>
                 </div>
                 {isContactMasked && (

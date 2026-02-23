@@ -15,12 +15,14 @@ interface Booking {
   end_date: string;
   total_price: number;
   status: string;
+  maskedContact?: string;
   equipment: {
     name: string;
     category: string;
     district: string;
-    contact_number: string;
     image_url: string;
+    owner_id: string;
+    contact_number: string;
   };
 }
 
@@ -50,14 +52,27 @@ const MyBookings = () => {
             category,
             district,
             contact_number,
-            image_url
+            image_url,
+            owner_id
           )
         `)
         .eq("user_id", user?.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setBookings(data || []);
+      
+      // Mask contacts using server-side function
+      const bookingsWithMasked = await Promise.all(
+        (data || []).map(async (booking) => {
+          const { data: masked } = await supabase.rpc("get_masked_contact", {
+            contact: booking.equipment.contact_number,
+            equipment_owner_id: booking.equipment.owner_id,
+          });
+          return { ...booking, maskedContact: masked || "**********" };
+        })
+      );
+      
+      setBookings(bookingsWithMasked);
     } catch (error) {
       console.error("Error fetching bookings:", error);
       toast({
@@ -169,7 +184,7 @@ const MyBookings = () => {
                         <div>
                           <p className="text-sm font-medium">Contact</p>
                           <p className="text-sm text-muted-foreground">
-                            {booking.equipment.contact_number}
+                            {booking.maskedContact || "**********"}
                           </p>
                         </div>
                       </div>
