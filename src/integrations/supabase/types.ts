@@ -317,10 +317,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_equipment_public: { Args: { equipment_id?: string }; Returns: Json[] }
       get_masked_contact: {
         Args: { contact: string; equipment_owner_id: string }
         Returns: string
       }
+      get_own_profile: { Args: never; Returns: Json }
+      get_safe_profile: { Args: { profile_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]

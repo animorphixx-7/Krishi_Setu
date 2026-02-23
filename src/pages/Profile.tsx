@@ -41,19 +41,16 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user?.id)
-        .single();
+      const { data, error } = await supabase.rpc("get_own_profile");
 
       if (error) throw error;
       
+      const profileData = data as any;
       setProfile({
-        full_name: data.full_name || "",
-        phone: data.phone || "",
-        address: data.address || "",
-        district: data.district || "",
+        full_name: profileData?.full_name || "",
+        phone: profileData?.phone || "",
+        address: profileData?.address || "",
+        district: profileData?.district || "",
       });
     } catch (error) {
       console.error("Error fetching profile:", error);

@@ -67,7 +67,7 @@ const MyEquipment = () => {
     try {
       const { data, error } = await supabase
         .from("equipment")
-        .select("*")
+        .select("id, name, category, district, price_per_day, status, is_available, image_url, description, contact_number, created_at")
         .eq("owner_id", user?.id)
         .order("created_at", { ascending: false });
 

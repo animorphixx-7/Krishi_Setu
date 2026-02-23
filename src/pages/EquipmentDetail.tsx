@@ -43,7 +43,7 @@ const EquipmentDetail = () => {
       const { data, error } = await supabase
         .from("equipment")
         .select(`
-          *,
+          id, name, description, category, price_per_day, district, image_url, is_available, status, owner_id, created_at,
           profiles:owner_id (full_name)
         `)
         .eq("id", id)
@@ -55,7 +55,7 @@ const EquipmentDetail = () => {
       // Fetch masked contact using server-side function
       if (data) {
         const { data: masked } = await supabase.rpc("get_masked_contact", {
-          contact: data.contact_number || "",
+          contact: "",
           equipment_owner_id: data.owner_id,
         });
         setMaskedContact(masked || "**********");

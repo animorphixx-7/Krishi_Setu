@@ -52,7 +52,7 @@ const Admin = () => {
       const [equipmentRes, bookingsRes] = await Promise.all([
         supabase
           .from("equipment")
-          .select("*, profiles(full_name)")
+          .select("id, name, category, district, price_per_day, status, owner_id, created_at, profiles(full_name)")
           .order("created_at", { ascending: false }),
         supabase
           .from("bookings")

@@ -39,7 +39,7 @@ const Equipment = () => {
     try {
       const { data: equipmentData, error: equipmentError } = await supabase
         .from("equipment")
-        .select("*")
+        .select("id, name, description, category, price_per_day, district, image_url, is_available, status, owner_id, created_at")
         .eq("status", "approved")
         .eq("is_available", true);
 
