@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -12,6 +12,24 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const { crops, district } = await req.json();
     const location = district || "Maharashtra";
     
@@ -28,7 +46,6 @@ serve(async (req) => {
     }
 
     // Fetch real market prices from database
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -53,14 +70,12 @@ serve(async (req) => {
 
     if (marketPrices && marketPrices.length > 0) {
       for (const crop of crops) {
-        // Normalize crop name for matching
         const cropLower = crop.toLowerCase().replace(/[()]/g, '').trim();
         
         const matchingPrices = marketPrices.filter(mp => {
           const mpLower = mp.crop_name.toLowerCase();
           return mpLower.includes(cropLower) || 
                  cropLower.includes(mpLower) ||
-                 // Handle common variations
                  (cropLower.includes('jowar') && mpLower.includes('sorghum')) ||
                  (cropLower.includes('sorghum') && mpLower.includes('jowar')) ||
                  (cropLower.includes('bajra') && mpLower.includes('millet')) ||
@@ -97,7 +112,6 @@ serve(async (req) => {
       marketPriceContext += "\nUSE THESE ACTUAL PRICES for calculating profitability scores and expected profit per acre. Be accurate with the price ranges shown above.";
     }
 
-    // Generate realistic weather data
     const baseTemp = 25 + Math.random() * 10;
     const humidity = Math.round(55 + Math.random() * 35);
     const conditions = ["Clear", "Partly Cloudy", "Cloudy", "Light Rain", "Sunny"][Math.floor(Math.random() * 5)];
@@ -254,7 +268,6 @@ serve(async (req) => {
       throw new Error("No comparison data received from AI");
     }
 
-    // Add real price data to the response
     comparisonData.real_market_prices = cropPriceMap;
     comparisonData.market_data_available = Object.keys(cropPriceMap).length > 0;
 

@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface WeatherData {
@@ -24,7 +25,6 @@ interface WeatherData {
 
 async function fetchWeatherData(district: string): Promise<WeatherData | null> {
   try {
-    // Simulate realistic weather data for Maharashtra districts
     const baseTemp = 25 + Math.random() * 10;
     const conditions = ["Clear", "Partly Cloudy", "Cloudy", "Light Rain", "Sunny"][Math.floor(Math.random() * 5)];
     
@@ -63,6 +63,24 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const { district, month, crop_type } = await req.json();
     const location = district || "Maharashtra";
     const selectedMonth = month || new Date().toLocaleString('en-US', { month: 'long' });
@@ -72,7 +90,6 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Fetch current weather data
     const weatherData = await fetchWeatherData(location);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -282,7 +299,6 @@ serve(async (req) => {
       throw new Error("No calendar data received from AI");
     }
 
-    // Ensure weather data is included
     if (!calendarData.current_weather && weatherData) {
       calendarData.current_weather = weatherData.current;
     }
