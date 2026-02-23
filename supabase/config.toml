@@ -1,1 +1,16 @@
 project_id = "pmsrpruzjuayscbwyhjt"
+
+[functions.fetch-market-prices]
+verify_jwt = false
+
+[functions.fetch-weather-forecast]
+verify_jwt = false
+
+[functions.crop-calendar]
+verify_jwt = false
+
+[functions.compare-crops]
+verify_jwt = false
+
+[functions.government-schemes]
+verify_jwt = false
