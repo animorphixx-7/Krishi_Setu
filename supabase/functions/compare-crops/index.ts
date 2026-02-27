@@ -261,7 +261,12 @@ serve(async (req) => {
     let comparisonData = null;
     const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
-      comparisonData = JSON.parse(toolCall.function.arguments);
+      try {
+        comparisonData = JSON.parse(toolCall.function.arguments);
+      } catch (parseError) {
+        console.error("Failed to parse AI response:", parseError);
+        throw new Error("Invalid AI response format");
+      }
     }
 
     if (!comparisonData) {
