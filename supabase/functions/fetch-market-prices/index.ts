@@ -135,8 +135,13 @@ serve(async (req) => {
     let prices = [];
     const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
-      const args = JSON.parse(toolCall.function.arguments);
-      prices = args.prices || [];
+      try {
+        const args = JSON.parse(toolCall.function.arguments);
+        prices = Array.isArray(args.prices) ? args.prices : [];
+      } catch (parseError) {
+        console.error("Failed to parse AI response:", parseError);
+        throw new Error("Invalid AI response format");
+      }
     }
 
     if (prices.length === 0) {
