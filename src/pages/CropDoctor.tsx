@@ -18,7 +18,12 @@ import {
   Loader2,
   Image as ImageIcon,
   X,
+  Languages,
 } from "lucide-react";
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/components/ui/toggle-group";
 
 interface Diagnosis {
   plant_name: string;
@@ -39,6 +44,7 @@ const CropDoctor = () => {
   const [diagnosis, setDiagnosis] = useState<Diagnosis | null>(null);
   const [loading, setLoading] = useState(false);
   const [rawError, setRawError] = useState<string | null>(null);
+  const [language, setLanguage] = useState<string>("English");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -67,7 +73,7 @@ const CropDoctor = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("crop-doctor", {
-        body: { image },
+        body: { image, language },
       });
 
       if (error) throw error;
@@ -114,9 +120,23 @@ const CropDoctor = () => {
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
             🌿 Crop Doctor
           </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">
+          <p className="text-muted-foreground max-w-xl mx-auto mb-4">
             Upload a photo of your crop and get instant disease diagnosis with treatment suggestions
           </p>
+          <div className="inline-flex items-center gap-2 bg-muted rounded-lg p-1">
+            <Languages className="h-4 w-4 text-muted-foreground ml-2" />
+            <ToggleGroup type="single" value={language} onValueChange={(v) => v && setLanguage(v)} className="gap-0">
+              <ToggleGroupItem value="English" className="px-3 py-1.5 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md">
+                English
+              </ToggleGroupItem>
+              <ToggleGroupItem value="Hindi" className="px-3 py-1.5 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md">
+                हिंदी
+              </ToggleGroupItem>
+              <ToggleGroupItem value="Marathi" className="px-3 py-1.5 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md">
+                मराठी
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
         </div>
 
         {/* Upload Section */}
