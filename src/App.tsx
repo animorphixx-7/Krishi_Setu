@@ -18,6 +18,7 @@ import Admin from "./pages/Admin";
 import MyEquipment from "./pages/MyEquipment";
 import MyBookings from "./pages/MyBookings";
 import Profile from "./pages/Profile";
+import CropDoctor from "./pages/CropDoctor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/crop-comparison" element={<CropComparison />} />
             <Route path="/government-schemes" element={<GovernmentSchemes />} />
             <Route path="/helpline" element={<Helpline />} />
+            <Route path="/crop-doctor" element={<CropDoctor />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/my-equipment" element={<MyEquipment />} />
             <Route path="/my-bookings" element={<MyBookings />} />

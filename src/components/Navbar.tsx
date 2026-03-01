@@ -23,6 +23,7 @@ const Navbar = () => {
     { to: "/crop-calendar", label: "Crop Calendar" },
     { to: "/crop-comparison", label: "Compare Crops" },
     { to: "/government-schemes", label: "Schemes" },
+    { to: "/crop-doctor", label: "🌿 Crop Doctor" },
     { to: "/helpline", label: "Helpline" },
   ];
 
