@@ -24,6 +24,7 @@ const Navbar = () => {
     { to: "/crop-comparison", label: "Compare Crops" },
     { to: "/government-schemes", label: "Schemes" },
     { to: "/crop-doctor", label: "🌿 Crop Doctor" },
+    { to: "/community", label: "🤝 Community" },
     { to: "/helpline", label: "Helpline" },
   ];
 

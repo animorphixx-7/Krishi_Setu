@@ -19,6 +19,7 @@ import MyEquipment from "./pages/MyEquipment";
 import MyBookings from "./pages/MyBookings";
 import Profile from "./pages/Profile";
 import CropDoctor from "./pages/CropDoctor";
+import CommunityForum from "./pages/CommunityForum";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/government-schemes" element={<GovernmentSchemes />} />
             <Route path="/helpline" element={<Helpline />} />
             <Route path="/crop-doctor" element={<CropDoctor />} />
+            <Route path="/community" element={<CommunityForum />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/my-equipment" element={<MyEquipment />} />
             <Route path="/my-bookings" element={<MyBookings />} />
