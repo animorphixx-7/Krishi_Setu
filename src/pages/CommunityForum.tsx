@@ -39,6 +39,8 @@ import {
   HelpCircle,
   Lightbulb,
   Loader2,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
