@@ -384,9 +384,40 @@ const CommunityForum = () => {
                       ))}
                     </SelectContent>
                   </Select>
+
+                  {/* Image upload */}
+                  {imagePreview ? (
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full max-h-48 object-cover rounded-lg border border-border"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-7 w-7"
+                        onClick={clearImage}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center gap-2 px-4 py-3 border border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                      <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Add a photo (optional, max 5MB)</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageSelect}
+                      />
+                    </label>
+                  )}
+
                   <Button onClick={handleCreatePost} disabled={posting} className="w-full">
                     {posting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-                    Publish Post
+                    {uploading ? "Uploading image..." : "Publish Post"}
                   </Button>
                 </div>
               </DialogContent>
