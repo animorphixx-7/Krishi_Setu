@@ -62,6 +62,7 @@ interface Post {
   likes_count: number;
   comments_count: number;
   created_at: string;
+  image_url?: string | null;
   author_name?: string;
 }
 
