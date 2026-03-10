@@ -170,6 +170,27 @@ const CommunityForum = () => {
     }));
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Image must be under 5MB.", variant: "destructive" });
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please select an image file.", variant: "destructive" });
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+  };
+
   const handleCreatePost = async () => {
     if (!user) {
       toast({ title: "Please login", description: "You need to be logged in to post.", variant: "destructive" });
@@ -181,11 +202,35 @@ const CommunityForum = () => {
     }
 
     setPosting(true);
+    let uploadedImageUrl: string | null = null;
+
+    // Upload image if selected
+    if (imageFile) {
+      setUploading(true);
+      const fileExt = imageFile.name.split(".").pop();
+      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("forum-images")
+        .upload(filePath, imageFile);
+
+      if (uploadError) {
+        toast({ title: "Upload failed", description: "Could not upload image.", variant: "destructive" });
+        setPosting(false);
+        setUploading(false);
+        return;
+      }
+
+      const { data: publicUrl } = supabase.storage.from("forum-images").getPublicUrl(filePath);
+      uploadedImageUrl = publicUrl.publicUrl;
+      setUploading(false);
+    }
+
     const { error } = await supabase.from("forum_posts").insert({
       user_id: user.id,
       title: newTitle.trim(),
       content: newContent.trim(),
       category: newCategory,
+      image_url: uploadedImageUrl,
     });
 
     if (error) {
@@ -195,6 +240,7 @@ const CommunityForum = () => {
       setNewTitle("");
       setNewContent("");
       setNewCategory("general");
+      clearImage();
       setNewPostOpen(false);
       fetchPosts();
     }
