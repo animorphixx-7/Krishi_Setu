@@ -500,6 +500,14 @@ const CommunityForum = () => {
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap mb-4 line-clamp-3">
                       {post.content}
                     </p>
+                    {post.image_url && (
+                      <img
+                        src={post.image_url}
+                        alt="Post image"
+                        className="w-full max-h-80 object-cover rounded-lg mb-4 border border-border"
+                        loading="lazy"
+                      />
+                    )}
                     <div className="flex items-center gap-4">
                       <Button
                         variant="ghost"
