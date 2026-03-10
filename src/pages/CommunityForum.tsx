@@ -39,6 +39,8 @@ import {
   HelpCircle,
   Lightbulb,
   Loader2,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -60,6 +62,7 @@ interface Post {
   likes_count: number;
   comments_count: number;
   created_at: string;
+  image_url?: string | null;
   author_name?: string;
 }
 
@@ -89,6 +92,9 @@ const CommunityForum = () => {
   const [newComment, setNewComment] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
   const [userLikes, setUserLikes] = useState<Set<string>>(new Set());
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchPosts();
@@ -164,6 +170,27 @@ const CommunityForum = () => {
     }));
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Image must be under 5MB.", variant: "destructive" });
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please select an image file.", variant: "destructive" });
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+  };
+
   const handleCreatePost = async () => {
     if (!user) {
       toast({ title: "Please login", description: "You need to be logged in to post.", variant: "destructive" });
@@ -175,11 +202,35 @@ const CommunityForum = () => {
     }
 
     setPosting(true);
+    let uploadedImageUrl: string | null = null;
+
+    // Upload image if selected
+    if (imageFile) {
+      setUploading(true);
+      const fileExt = imageFile.name.split(".").pop();
+      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("forum-images")
+        .upload(filePath, imageFile);
+
+      if (uploadError) {
+        toast({ title: "Upload failed", description: "Could not upload image.", variant: "destructive" });
+        setPosting(false);
+        setUploading(false);
+        return;
+      }
+
+      const { data: publicUrl } = supabase.storage.from("forum-images").getPublicUrl(filePath);
+      uploadedImageUrl = publicUrl.publicUrl;
+      setUploading(false);
+    }
+
     const { error } = await supabase.from("forum_posts").insert({
       user_id: user.id,
       title: newTitle.trim(),
       content: newContent.trim(),
       category: newCategory,
+      image_url: uploadedImageUrl,
     });
 
     if (error) {
@@ -189,6 +240,7 @@ const CommunityForum = () => {
       setNewTitle("");
       setNewContent("");
       setNewCategory("general");
+      clearImage();
       setNewPostOpen(false);
       fetchPosts();
     }
@@ -332,9 +384,40 @@ const CommunityForum = () => {
                       ))}
                     </SelectContent>
                   </Select>
+
+                  {/* Image upload */}
+                  {imagePreview ? (
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full max-h-48 object-cover rounded-lg border border-border"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-7 w-7"
+                        onClick={clearImage}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center gap-2 px-4 py-3 border border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                      <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Add a photo (optional, max 5MB)</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageSelect}
+                      />
+                    </label>
+                  )}
+
                   <Button onClick={handleCreatePost} disabled={posting} className="w-full">
                     {posting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-                    Publish Post
+                    {uploading ? "Uploading image..." : "Publish Post"}
                   </Button>
                 </div>
               </DialogContent>
@@ -417,6 +500,14 @@ const CommunityForum = () => {
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap mb-4 line-clamp-3">
                       {post.content}
                     </p>
+                    {post.image_url && (
+                      <img
+                        src={post.image_url}
+                        alt="Post image"
+                        className="w-full max-h-80 object-cover rounded-lg mb-4 border border-border"
+                        loading="lazy"
+                      />
+                    )}
                     <div className="flex items-center gap-4">
                       <Button
                         variant="ghost"
