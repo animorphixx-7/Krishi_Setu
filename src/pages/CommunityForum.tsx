@@ -92,6 +92,9 @@ const CommunityForum = () => {
   const [newComment, setNewComment] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
   const [userLikes, setUserLikes] = useState<Set<string>>(new Set());
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchPosts();
