@@ -1,73 +1,105 @@
-# Welcome to your Lovable project
+# Krishi-Setu
+## Bridging Farmers with Smart Agriculture
 
-## Project info
 
-**URL**: https://lovable.dev/projects/af54bbaf-0187-4cbf-99d7-5741a6b92306
+**Project Overview**
 
-## How can I edit this code?
+Krishi-Setu is a digital agriculture assistant designed to empower farmers with real-time, accurate, and easy-to-understand agricultural information.
 
-There are several ways of editing your application.
+It transforms farming decisions from guesswork → data-driven precision 🌱📊
 
-**Use Lovable**
+**Context**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/af54bbaf-0187-4cbf-99d7-5741a6b92306) and start prompting.
+India is one of the largest agricultural nations, yet farmers often lack access to:
 
-Changes made via Lovable will be committed automatically to this repo.
+Reliable crop guidance
+Market price transparency
+Weather predictions
+Government schemes
 
-**Use your preferred IDE**
+This gap leads to low productivity and reduced profits.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Krishi-Setu acts as a bridge between farmers and modern technology, delivering verified insights directly to their fingertips.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+**Problem Statement**
 
-Follow these steps:
+Farmers face critical challenges:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+ Wrong crop selection
+ Lack of awareness about schemes & subsidies
+ Middlemen exploitation
+ Weather unpredictability
+ No proper digital farming guidance
+
+## There is a need for a centralized, smart agriculture platform.
+
+** Objectives**
+
+## Krishi-Setu aims to:
+
+ Suggest crops based on region & season
+ Show real-time mandi prices
+ Provide weather forecasts & rainfall predictions
+ Guide on fertilizers & pesticides
+ Share government schemes & subsidies
+ Offer modern farming tips & learning resources
+ Reduce dependency on middlemen
+
+# Goal: Improve farmer income, productivity, and decision-making.
+
+# Features
+Feature	Description
+ Crop Recommendation	Smart suggestions based on location & season
+ Market Prices	Real-time mandi rates for better selling decisions
+ Weather Insights	Forecasts to prevent crop loss
+ Fertilizer Guide	Scientific recommendations
+ Govt Schemes	Latest subsidies, loans & policies
+ Learning Hub	Articles & modern farming techniques
+
+
+## Tech Stack
+ React
+ Vite
+ TypeScript
+ Tailwind CSS
+ shadcn-ui
+ 
+# How to Run the Project
+
+Make sure you have Node.js & npm installed.
+
+# Step 1: Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
+# Step 2: Navigate to the project directory
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Step 3: Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Start development server
 npm run dev
-```
 
-**Edit a file directly in GitHub**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
 
-**Use GitHub Codespaces**
+# Future Scope
+ Mobile App (Android/iOS)
+ AI-based crop disease detection
+ Location-based alerts
+ Satellite data integration
+ Multi-language support for farmers
+ Contributing
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Contributions are welcome!
 
-## What technologies are used for this project?
+Fork the repo
+Create a new branch
+Make changes
+Submit a PR
+📄 License
 
-This project is built with:
+This project is licensed under the MIT License.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+💡 Inspiration
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/af54bbaf-0187-4cbf-99d7-5741a6b92306) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Built with a vision to make technology the strongest tool in a farmer’s hand 🌾💪
