@@ -422,7 +422,7 @@ const Admin = () => {
                       <CardContent>
                         <div className="space-y-2 mb-4">
                           <p className="text-sm text-muted-foreground">
-                            <strong>Owner:</strong> {item.profiles.full_name}
+                            <strong>Owner:</strong> {item.profiles?.full_name ?? "Unknown"}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             <strong>Category:</strong> {item.category}
@@ -478,7 +478,7 @@ const Admin = () => {
                     <CardContent>
                       <div className="space-y-2 mb-4">
                         <p className="text-sm text-muted-foreground">
-                          <strong>Customer:</strong> {booking.profiles.full_name}
+                          <strong>Customer:</strong> {booking.profiles?.full_name ?? "Unknown"}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           <strong>Duration:</strong>{" "}
