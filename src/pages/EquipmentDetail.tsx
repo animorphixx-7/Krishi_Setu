@@ -385,48 +385,50 @@ const EquipmentDetail = () => {
         </div>
 
         <div className="space-y-6">
-          <Card className="shadow-medium">
-            <CardHeader>
-              <CardTitle>Write a Review</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Rating</Label>
-                <div className="flex gap-2 mt-2">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      type="button"
-                      onClick={() => setNewReview({ ...newReview, rating })}
-                      className={`p-2 ${
-                        rating <= newReview.rating ? "text-amber-500" : "text-muted-foreground"
-                      }`}
-                    >
-                      <Star className={`h-6 w-6 ${rating <= newReview.rating ? "fill-current" : ""}`} />
-                    </button>
-                  ))}
+          {user && (
+            <Card className="shadow-medium">
+              <CardHeader>
+                <CardTitle>Write a Review</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Rating</Label>
+                  <div className="flex gap-2 mt-2">
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <button
+                        key={rating}
+                        type="button"
+                        onClick={() => setNewReview({ ...newReview, rating })}
+                        className={`p-2 ${
+                          rating <= newReview.rating ? "text-amber-500" : "text-muted-foreground"
+                        }`}
+                      >
+                        <Star className={`h-6 w-6 ${rating <= newReview.rating ? "fill-current" : ""}`} />
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <Label>Comment</Label>
-                <Textarea
-                  value={newReview.comment}
-                  onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                  placeholder="Share your experience..."
-                  rows={3}
-                  maxLength={500}
-                  className={reviewError ? "border-destructive" : ""}
-                />
-                <div className="flex justify-between mt-1">
-                  {reviewError && (
-                    <p className="text-sm text-destructive">{reviewError}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground ml-auto">{newReview.comment.length}/500 characters</p>
+                <div>
+                  <Label>Comment</Label>
+                  <Textarea
+                    value={newReview.comment}
+                    onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                    placeholder="Share your experience..."
+                    rows={3}
+                    maxLength={500}
+                    className={reviewError ? "border-destructive" : ""}
+                  />
+                  <div className="flex justify-between mt-1">
+                    {reviewError && (
+                      <p className="text-sm text-destructive">{reviewError}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground ml-auto">{newReview.comment.length}/500 characters</p>
+                  </div>
                 </div>
-              </div>
-              <Button onClick={handleReviewSubmit}>Submit Review</Button>
-            </CardContent>
-          </Card>
+                <Button onClick={handleReviewSubmit}>Submit Review</Button>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="shadow-medium">
             <CardHeader>
