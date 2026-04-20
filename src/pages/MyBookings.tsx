@@ -51,7 +51,6 @@ const MyBookings = () => {
             name,
             category,
             district,
-            contact_number,
             image_url,
             owner_id
           )
@@ -65,7 +64,7 @@ const MyBookings = () => {
       const bookingsWithMasked = await Promise.all(
         (data || []).map(async (booking) => {
           const { data: masked } = await supabase.rpc("get_masked_contact", {
-            contact: booking.equipment.contact_number,
+            contact: "",
             equipment_owner_id: booking.equipment.owner_id,
           });
           return { ...booking, maskedContact: masked || "**********" };
