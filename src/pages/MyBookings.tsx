@@ -22,7 +22,6 @@ interface Booking {
     district: string;
     image_url: string;
     owner_id: string;
-    contact_number: string;
   };
 }
 
