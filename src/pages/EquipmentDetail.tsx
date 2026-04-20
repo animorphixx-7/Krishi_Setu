@@ -435,6 +435,14 @@ const EquipmentDetail = () => {
               <CardTitle>Reviews ({reviews.length})</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {!user && (
+                <div className="flex items-center justify-between gap-3 rounded-md border border-dashed border-border bg-muted/40 p-3">
+                  <p className="text-sm text-muted-foreground">Login to leave a review</p>
+                  <Button size="sm" variant="outline" onClick={() => navigate("/auth")}>
+                    Login
+                  </Button>
+                </div>
+              )}
               {reviews.length === 0 ? (
                 <p className="text-center text-muted-foreground py-4">No reviews yet</p>
               ) : (
