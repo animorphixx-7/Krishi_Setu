@@ -316,101 +316,119 @@ const EquipmentDetail = () => {
               </div>
             </div>
 
-            <Card className="shadow-soft">
-              <CardHeader>
-                <CardTitle>Book this Equipment</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {bookings.length > 0 && (
-                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg p-3 mb-4">
-                    <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
-                      ⚠️ This equipment has active bookings. Booked dates are disabled in the calendar.
-                    </p>
+            {user ? (
+              <Card className="shadow-soft">
+                <CardHeader>
+                  <CardTitle>Book this Equipment</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {bookings.length > 0 && (
+                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+                        ⚠️ This equipment has active bookings. Booked dates are disabled in the calendar.
+                      </p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Start Date</Label>
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        disabled={(date) => date < new Date() || isDateBooked(date)}
+                        className="rounded-md border mt-2"
+                      />
+                    </div>
+                    <div>
+                      <Label>End Date</Label>
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        disabled={(date) => date < new Date() || isDateBooked(date)}
+                        className="rounded-md border mt-2"
+                      />
+                    </div>
                   </div>
-                )}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Start Date</Label>
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={setStartDate}
-                      disabled={(date) => date < new Date() || isDateBooked(date)}
-                      className="rounded-md border mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label>End Date</Label>
-                    <Calendar
-                      mode="single"
-                      selected={endDate}
-                      onSelect={setEndDate}
-                      disabled={(date) => date < new Date() || isDateBooked(date)}
-                      className="rounded-md border mt-2"
-                    />
-                  </div>
-                </div>
-                {startDate && endDate && startDate < endDate && (
-                  <div className="bg-muted p-4 rounded-lg">
-                    <p className="text-sm mb-2">
-                      Duration: {Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))} days
-                    </p>
-                    <p className="text-lg font-semibold text-primary">
-                      Total: ₹{Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) * equipment.price_per_day}
-                    </p>
-                  </div>
-                )}
-                <Button onClick={handleBooking} className="w-full" size="lg">
-                  Confirm Booking
-                </Button>
-              </CardContent>
-            </Card>
+                  {startDate && endDate && startDate < endDate && (
+                    <div className="bg-muted p-4 rounded-lg">
+                      <p className="text-sm mb-2">
+                        Duration: {Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))} days
+                      </p>
+                      <p className="text-lg font-semibold text-primary">
+                        Total: ₹{Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) * equipment.price_per_day}
+                      </p>
+                    </div>
+                  )}
+                  <Button onClick={handleBooking} className="w-full" size="lg">
+                    Confirm Booking
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="shadow-soft border-primary/20">
+                <CardHeader>
+                  <CardTitle>Want to book this equipment?</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Please log in to check availability, see the owner's contact and confirm your booking.
+                  </p>
+                  <Button onClick={() => navigate("/auth")} className="w-full" size="lg">
+                    Login to book
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 
         <div className="space-y-6">
-          <Card className="shadow-medium">
-            <CardHeader>
-              <CardTitle>Write a Review</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Rating</Label>
-                <div className="flex gap-2 mt-2">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      type="button"
-                      onClick={() => setNewReview({ ...newReview, rating })}
-                      className={`p-2 ${
-                        rating <= newReview.rating ? "text-amber-500" : "text-muted-foreground"
-                      }`}
-                    >
-                      <Star className={`h-6 w-6 ${rating <= newReview.rating ? "fill-current" : ""}`} />
-                    </button>
-                  ))}
+          {user && (
+            <Card className="shadow-medium">
+              <CardHeader>
+                <CardTitle>Write a Review</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Rating</Label>
+                  <div className="flex gap-2 mt-2">
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <button
+                        key={rating}
+                        type="button"
+                        onClick={() => setNewReview({ ...newReview, rating })}
+                        className={`p-2 ${
+                          rating <= newReview.rating ? "text-amber-500" : "text-muted-foreground"
+                        }`}
+                      >
+                        <Star className={`h-6 w-6 ${rating <= newReview.rating ? "fill-current" : ""}`} />
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <Label>Comment</Label>
-                <Textarea
-                  value={newReview.comment}
-                  onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                  placeholder="Share your experience..."
-                  rows={3}
-                  maxLength={500}
-                  className={reviewError ? "border-destructive" : ""}
-                />
-                <div className="flex justify-between mt-1">
-                  {reviewError && (
-                    <p className="text-sm text-destructive">{reviewError}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground ml-auto">{newReview.comment.length}/500 characters</p>
+                <div>
+                  <Label>Comment</Label>
+                  <Textarea
+                    value={newReview.comment}
+                    onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                    placeholder="Share your experience..."
+                    rows={3}
+                    maxLength={500}
+                    className={reviewError ? "border-destructive" : ""}
+                  />
+                  <div className="flex justify-between mt-1">
+                    {reviewError && (
+                      <p className="text-sm text-destructive">{reviewError}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground ml-auto">{newReview.comment.length}/500 characters</p>
+                  </div>
                 </div>
-              </div>
-              <Button onClick={handleReviewSubmit}>Submit Review</Button>
-            </CardContent>
-          </Card>
+                <Button onClick={handleReviewSubmit}>Submit Review</Button>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="shadow-medium">
             <CardHeader>
