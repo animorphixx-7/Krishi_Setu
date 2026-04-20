@@ -17,7 +17,7 @@ const loginSchema = z.object({
 
 const signupSchema = loginSchema.extend({
   fullName: z.string().min(2, "Name must be at least 2 characters").max(100),
-  role: z.enum(["farmer", "equipment_owner", "admin"]),
+  role: z.enum(["farmer", "equipment_owner"]),
 });
 
 const Auth = () => {
@@ -67,7 +67,7 @@ const Auth = () => {
         email: signupEmail, 
         password: signupPassword, 
         fullName,
-        role: role as "farmer" | "equipment_owner" | "admin"
+        role: role as "farmer" | "equipment_owner"
       });
       
       setLoading(true);
@@ -172,7 +172,6 @@ const Auth = () => {
                     <SelectContent>
                       <SelectItem value="farmer">Farmer</SelectItem>
                       <SelectItem value="equipment_owner">Equipment Owner</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
