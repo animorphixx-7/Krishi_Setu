@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { User, LogOut, Menu } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,6 +68,8 @@ const Navbar = () => {
           <img 
             src={logo} 
             alt="Krishi Setu" 
+            width={84}
+            height={48}
             className="h-10 md:h-12 w-auto transition-transform duration-300 group-hover:scale-110" 
           />
         </Link>
