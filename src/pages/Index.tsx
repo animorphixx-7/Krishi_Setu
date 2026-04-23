@@ -49,6 +49,10 @@ const Index = () => {
           <img
             src={heroImage}
             alt="Modern farming equipment in agricultural fields"
+            width={1600}
+            height={900}
+            fetchPriority="high"
+            decoding="async"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent" />
