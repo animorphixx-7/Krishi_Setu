@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tractor, ShoppingCart, Star, TrendingUp, Cloud, MessageSquare, Shield } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import heroImage from "@/assets/hero-farming.jpg";
+const heroImage = "/hero-farming.jpg";
 
 const Index = () => {
   const features = [
