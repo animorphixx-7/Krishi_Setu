@@ -21,6 +21,7 @@ import Profile from "./pages/Profile";
 import CropDoctor from "./pages/CropDoctor";
 import CommunityForum from "./pages/CommunityForum";
 import NotFound from "./pages/NotFound";
+import MobileBottomNav from "@/components/MobileBottomNav";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <MobileBottomNav />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
