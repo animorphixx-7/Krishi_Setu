@@ -20,7 +20,10 @@ const MobileBottomNav = () => {
     >
       <ul className="grid grid-cols-5">
         {tabs.map(({ to, label, icon: Icon }) => {
-          const active = pathname === to || (to !== "/" && pathname.startsWith(to));
+          const active =
+            pathname === to ||
+            pathname === `${to}/` ||
+            pathname.startsWith(`${to}/`);
           return (
             <li key={to}>
               <Link
