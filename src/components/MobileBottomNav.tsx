@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Tractor, CalendarCheck, TrendingUp, CloudSun, MessageCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -11,7 +12,15 @@ const tabs = [
 ];
 
 const MobileBottomNav = () => {
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname, search } = location;
+  const [pulseKey, setPulseKey] = useState(0);
+
+  // Trigger a brief visual confirmation whenever the URL changes,
+  // including query-param-only changes (e.g. ?date=...).
+  useEffect(() => {
+    setPulseKey((k) => k + 1);
+  }, [pathname, search]);
 
   return (
     <nav
@@ -28,14 +37,36 @@ const MobileBottomNav = () => {
             <li key={to}>
               <Link
                 to={to}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors",
+                  "relative flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
-                aria-current={active ? "page" : undefined}
               >
-                <Icon className={cn("h-5 w-5", active && "scale-110")} aria-hidden="true" />
-                <span>{label}</span>
+                {/* Top accent bar shown on active tab */}
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "absolute top-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full bg-primary transition-all duration-300",
+                    active ? "w-8 opacity-100" : "w-0 opacity-0"
+                  )}
+                />
+                <Icon
+                  key={active ? `active-${pulseKey}` : "idle"}
+                  aria-hidden="true"
+                  className={cn(
+                    "h-5 w-5 transition-transform duration-300",
+                    active ? "scale-110 animate-in zoom-in-75 fade-in" : "scale-100"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "transition-all duration-200",
+                    active ? "font-semibold tracking-wide" : "font-medium"
+                  )}
+                >
+                  {label}
+                </span>
               </Link>
             </li>
           );
