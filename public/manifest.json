@@ -1,0 +1,25 @@
+{
+  "name": "Krishi Setu - Agricultural Services",
+  "short_name": "Krishi Setu",
+  "description": "Empowering farmers with equipment booking, schemes, weather, market prices and AI crop diagnosis.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
