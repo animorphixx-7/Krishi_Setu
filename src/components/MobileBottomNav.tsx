@@ -39,9 +39,13 @@ const MobileBottomNav = () => {
                 to={to}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors",
+                  "relative flex flex-col items-center justify-center gap-1 min-h-[56px] px-1 py-2 text-[11px] font-medium select-none touch-manipulation",
+                  "transition-all duration-150 ease-out",
+                  "active:scale-95 active:bg-primary/10",
+                  "hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
+                style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 {/* Top accent bar shown on active tab */}
                 <span
