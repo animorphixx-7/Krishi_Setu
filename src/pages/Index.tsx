@@ -33,6 +33,11 @@ const Index = () => {
       description: "Plan your farming activities with accurate weather predictions",
     },
     {
+      icon: Sprout,
+      title: "Crop Recommendation",
+      description: "AI-powered crop suggestions based on your soil, season, and water availability",
+    },
+    {
       icon: MessageSquare,
       title: "24/7 Helpline",
       description: "Get instant support through our dedicated helpline service",
