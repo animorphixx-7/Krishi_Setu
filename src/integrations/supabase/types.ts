@@ -459,6 +459,42 @@ export type Database = {
         }
         Relationships: []
       }
+      weather_cache: {
+        Row: {
+          created_at: string
+          expires_at: string
+          fetched_at: string
+          id: string
+          latitude: number
+          location_key: string
+          longitude: number
+          payload: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          fetched_at?: string
+          id?: string
+          latitude: number
+          location_key: string
+          longitude: number
+          payload: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          fetched_at?: string
+          id?: string
+          latitude?: number
+          location_key?: string
+          longitude?: number
+          payload?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       equipment_owner_private: {
@@ -489,6 +525,7 @@ export type Database = {
       }
     }
     Functions: {
+      cleanup_expired_weather_cache: { Args: never; Returns: number }
       get_equipment_public: { Args: { equipment_id?: string }; Returns: Json[] }
       get_masked_contact: {
         Args: { contact: string; equipment_owner_id: string }
