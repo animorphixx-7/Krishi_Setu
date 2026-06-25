@@ -21,7 +21,7 @@ interface Equipment {
   category: string;
   district: string;
   price_per_day: number;
-  contact_number: string;
+  contact_number?: string;
   image_url: string;
   status: string;
   is_available: boolean;
