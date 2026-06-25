@@ -37,8 +37,9 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted to-background p-4">
-      <Card className="w-full max-w-md shadow-medium">
+    <main className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-background via-muted/50 to-background p-4">
+
+      <Card className="w-full max-w-md shadow-medium animate-fade-in-up">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <Tractor className="h-12 w-12 text-primary mb-2" />
           <CardTitle className="text-2xl font-bold text-center">Forgot Password</CardTitle>
@@ -80,7 +81,8 @@ const ForgotPassword = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+    </main>
+
   );
 };
 
