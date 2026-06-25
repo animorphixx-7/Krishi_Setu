@@ -64,24 +64,44 @@ const Auth = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      signupSchema.parse({ 
-        email: signupEmail, 
-        password: signupPassword, 
+      signupSchema.parse({
+        email: signupEmail,
+        password: signupPassword,
         fullName,
         role: role as "farmer" | "equipment_owner"
       });
-      
+
       setLoading(true);
-      await signUp(signupEmail, signupPassword, fullName, role);
+      const { error } = await signUp(signupEmail, signupPassword, fullName, role);
+      if (!error) {
+        navigate("/verify-email");
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        error.errors.forEach((err) => {
-          console.error(err.message);
-        });
+        error.errors.forEach((err) => toast.error(err.message));
       }
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error("Google sign-in failed. Please try again.");
+        setLoading(false);
+        return;
+      }
+      if (result.redirected) return;
+      navigate("/");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Google sign-in failed");
       setLoading(false);
     }
   };
