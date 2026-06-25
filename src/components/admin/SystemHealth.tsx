@@ -62,23 +62,22 @@ export default function SystemHealth() {
       detail: sess.session ? "Active session" : "No session (anonymous)",
     });
 
-    // Cache — measured from weather_cache
+    // Cache — measured from weather_cache freshness (hit/miss counters not tracked in schema)
     const { data: cacheRows, error: cacheErr } = await supabase
       .from("weather_cache")
-      .select("hit_count, miss_count, expires_at")
+      .select("expires_at, fetched_at")
       .limit(500);
     if (cacheErr) {
       results.push({ label: "Cache", status: "warn", value: "n/a", detail: cacheErr.message });
     } else {
-      const hits = (cacheRows ?? []).reduce((a, r) => a + (r.hit_count ?? 0), 0);
-      const misses = (cacheRows ?? []).reduce((a, r) => a + (r.miss_count ?? 0), 0);
-      const total = hits + misses;
-      const rate = total === 0 ? null : (hits / total) * 100;
+      const total = cacheRows?.length ?? 0;
+      const freshCount = (cacheRows ?? []).filter((r) => new Date(r.expires_at) > new Date()).length;
+      const rate = total === 0 ? null : (freshCount / total) * 100;
       results.push({
-        label: "Cache Hit Rate",
-        status: rate === null ? "unknown" : rate > 50 ? "ok" : "warn",
+        label: "Cache Freshness",
+        status: rate === null ? "unknown" : rate > 30 ? "ok" : "warn",
         value: rate === null ? "no data" : `${rate.toFixed(1)}%`,
-        detail: `${hits} hits / ${misses} misses across ${cacheRows?.length ?? 0} keys`,
+        detail: `${freshCount} fresh / ${total} cached entries`,
       });
     }
 

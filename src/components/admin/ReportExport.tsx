@@ -100,17 +100,18 @@ export default function ReportExport() {
       }
       case "weather_usage": {
         let q = supabase.from("weather_cache")
-          .select("created_at, location_key, district, hit_count, expires_at")
+          .select("created_at, location_key, latitude, longitude, fetched_at, expires_at")
           .gte("created_at", fromIso()).lte("created_at", toIso())
           .order("created_at", { ascending: false }).limit(5000);
-        if (district) q = q.ilike("district", `%${district}%`);
+        if (district) q = q.ilike("location_key", `%${district.toLowerCase()}%`);
         const { data, error } = await q;
         if (error) throw error;
         return (data ?? []).map((r) => ({
-          timestamp: r.created_at,
+          created_at: r.created_at,
           location_key: r.location_key,
-          district: r.district ?? "",
-          hit_count: r.hit_count ?? 0,
+          latitude: r.latitude,
+          longitude: r.longitude,
+          fetched_at: r.fetched_at,
           expires_at: r.expires_at,
         }));
       }
@@ -130,7 +131,7 @@ export default function ReportExport() {
       }
       case "farming_advice": {
         let q = supabase.from("farming_advice")
-          .select("created_at, user_id, advice_type, crop, crop_stage, district, language")
+          .select("created_at, user_id, advice_type, crop, crop_stage, district")
           .gte("created_at", fromIso()).lte("created_at", toIso())
           .order("created_at", { ascending: false }).limit(5000);
         if (district) q = q.ilike("district", `%${district}%`);
@@ -144,7 +145,6 @@ export default function ReportExport() {
           crop: r.crop ?? "",
           crop_stage: r.crop_stage ?? "",
           district: r.district ?? "",
-          language: r.language ?? "",
         }));
       }
       case "platform_analytics": {
