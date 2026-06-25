@@ -47,6 +47,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      <main>
       
       {/* Hero Section */}
       <section className="relative h-[600px] flex items-center justify-center overflow-hidden">
@@ -65,7 +66,7 @@ const Index = () => {
         <div className="container relative z-10">
           <div className="max-w-2xl space-y-6">
             <h1 className="text-5xl md:text-6xl font-bold text-foreground leading-tight">
-              Krishi Setu
+              Krishi Setu — Your Agricultural Equipment & Farming Hub
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground">
               Your Complete Agricultural Equipment & Farming Solution Hub
@@ -174,6 +175,7 @@ const Index = () => {
           </div>
         </div>
       </section>
+      </main>
     </div>
   );
 };
