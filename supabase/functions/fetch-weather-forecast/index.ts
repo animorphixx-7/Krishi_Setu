@@ -331,7 +331,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    let { city, latitude, longitude } = body as {
+    const { city, latitude, longitude } = body as {
       city?: string;
       latitude?: number;
       longitude?: number;

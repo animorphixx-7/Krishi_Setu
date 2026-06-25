@@ -13,6 +13,7 @@ const MAX_CONTENT_LEN = 4000;
 
 function sanitize(s: string): string {
   return s
+    // eslint-disable-next-line no-control-regex
     .replace(/\u0000/g, "")
     .replace(/(^|\n)\s*(system|assistant)\s*:\s*/gi, "$1") // strip role-prefix injection
     .slice(0, MAX_CONTENT_LEN);

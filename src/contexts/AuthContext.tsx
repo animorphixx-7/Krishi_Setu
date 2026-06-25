@@ -8,8 +8,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   userRole: string | null;
-  signUp: (email: string, password: string, fullName: string, role: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName: string, role: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   loading: boolean;
 }
@@ -95,9 +95,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       toast.success("Check your email to verify your account.");
       return { error: null };
-    } catch (error: any) {
-      toast.error(error.message);
-      return { error };
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message);
+      return { error: err };
     }
   };
 
@@ -116,9 +117,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast.success("Logged in successfully!");
       navigate("/");
       return { error: null };
-    } catch (error: any) {
-      toast.error(error.message);
-      return { error };
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message);
+      return { error: err };
     }
   };
 
@@ -129,8 +131,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUserRole(null);
       toast.success("Logged out successfully");
       navigate("/auth");
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error((error as Error).message);
     }
   };
 
