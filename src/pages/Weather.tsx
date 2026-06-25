@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Cloud, Droplets, Wind, Eye, Search, Sun, CloudRain, Loader2, 
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Cloud, Droplets, Wind, Eye, Search, Sun, CloudRain,
   Thermometer, Sprout, Bug, Scissors, RefreshCw, AlertTriangle,
-  CheckCircle, XCircle, Clock, Sunrise, Sunset
+  CheckCircle, XCircle, Clock, WifiOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -20,7 +20,6 @@ interface CurrentWeather {
   wind_speed: number;
   visibility: number;
   feels_like?: number;
-  uv_index?: number;
 }
 
 interface ForecastDay {
@@ -64,76 +63,156 @@ interface WeatherData {
   farming_recommendations: DayRecommendation[];
   weekly_summary: string;
   alerts?: WeatherAlert[];
+  source?: string;
 }
 
+interface WeatherResponse {
+  success: boolean;
+  data: WeatherData;
+  cached: boolean;
+  stale: boolean;
+  fetched_at: string;
+  expires_at: string;
+  warning?: string;
+}
+
+const SESSION_CACHE_KEY = "krishi:weather:last";
+
 const Weather = () => {
-  const [city, setCity] = useState("Pune");
+  const [city, setCity] = useState("");
+  const [inputCity, setInputCity] = useState("");
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stale, setStale] = useState(false);
   const [selectedDay, setSelectedDay] = useState(0);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [fetchedAt, setFetchedAt] = useState<Date | null>(null);
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+  const inFlightRef = useRef<Promise<void> | null>(null);
 
-  const fetchWeather = async () => {
-    setLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Please login to access weather forecasts");
-        return;
-      }
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-weather-forecast`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ city }),
+  const fetchWeather = useCallback(async (targetCity: string) => {
+    if (!targetCity) return;
+    // Dedup in-flight requests
+    if (inFlightRef.current) return inFlightRef.current;
+
+    const run = (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          setError("Please sign in to view weather forecasts.");
+          return;
         }
-      );
 
-      const result = await response.json();
+        const { data, error: invokeError } = await supabase.functions.invoke<WeatherResponse>(
+          "fetch-weather-forecast",
+          { body: { city: targetCity } },
+        );
 
-      if (!response.ok) {
-        if (response.status === 429) {
-          toast.error("Rate limit exceeded. Please try again later.");
-        } else if (response.status === 402) {
-          toast.error("AI credits exhausted. Please add credits to continue.");
-        } else {
-          toast.error(result.error || "Failed to fetch weather");
+        if (invokeError) throw invokeError;
+        if (!data?.success || !data.data) {
+          throw new Error("Invalid response from weather service");
         }
-        return;
-      }
 
-      setWeatherData(result.data);
-      setLastUpdated(new Date());
-      setSelectedDay(0);
-      toast.success(`Weather forecast updated for ${result.data.location}`);
-    } catch (error) {
-      console.error("Error fetching weather:", error);
-      toast.error("Failed to fetch weather forecast");
-    } finally {
-      setLoading(false);
-    }
-  };
+        setWeatherData(data.data);
+        setStale(!!data.stale);
+        setFetchedAt(new Date(data.fetched_at));
+        setExpiresAt(new Date(data.expires_at));
+        setSelectedDay(0);
+        setCity(targetCity);
+
+        try {
+          sessionStorage.setItem(SESSION_CACHE_KEY, JSON.stringify({
+            city: targetCity,
+            response: data,
+          }));
+        } catch { /* ignore */ }
+
+        if (data.stale) {
+          toast.warning("Showing last cached weather — provider unavailable.");
+        } else if (!data.cached) {
+          toast.success(`Weather updated for ${data.data.location}`);
+        }
+      } catch (e: any) {
+        console.error("Weather fetch failed:", e);
+        const msg = e?.context?.error || e?.message || "Failed to load weather";
+        // Try sessionStorage fallback
+        try {
+          const raw = sessionStorage.getItem(SESSION_CACHE_KEY);
+          if (raw) {
+            const cached = JSON.parse(raw) as { city: string; response: WeatherResponse };
+            if (cached?.response?.data) {
+              setWeatherData(cached.response.data);
+              setStale(true);
+              setFetchedAt(new Date(cached.response.fetched_at));
+              setExpiresAt(new Date(cached.response.expires_at));
+              setError(null);
+              toast.warning("Network issue — showing previously loaded weather.");
+              return;
+            }
+          }
+        } catch { /* ignore */ }
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    inFlightRef.current = run.finally(() => { inFlightRef.current = null; });
+    return inFlightRef.current;
+  }, []);
+
+  // Initial load: use profile district, else cached city, else Pune
+  useEffect(() => {
+    (async () => {
+      let initialCity = "Pune";
+      try {
+        const raw = sessionStorage.getItem(SESSION_CACHE_KEY);
+        if (raw) {
+          const cached = JSON.parse(raw) as { city: string; response: WeatherResponse };
+          if (cached?.city && cached?.response?.data) {
+            initialCity = cached.city;
+            // Hydrate immediately so UI shows last-known data while we refresh
+            setWeatherData(cached.response.data);
+            setFetchedAt(new Date(cached.response.fetched_at));
+            setExpiresAt(new Date(cached.response.expires_at));
+            const isExpired = new Date(cached.response.expires_at) <= new Date();
+            setStale(isExpired);
+            if (!isExpired) {
+              // Fresh enough — skip immediate refetch
+              setInputCity(initialCity);
+              setCity(initialCity);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+      } catch { /* ignore */ }
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("district")
+            .eq("id", session.user.id)
+            .maybeSingle();
+          if (profile?.district) initialCity = profile.district;
+        }
+      } catch { /* ignore */ }
+
+      setInputCity(initialCity);
+      fetchWeather(initialCity);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getConditionIcon = (condition: string) => {
     const lower = condition.toLowerCase();
-    if (lower.includes("rain") || lower.includes("shower")) return <CloudRain className="h-6 w-6" />;
-    if (lower.includes("sun") || lower.includes("clear")) return <Sun className="h-6 w-6" />;
+    if (lower.includes("rain") || lower.includes("shower") || lower.includes("drizzle")) return <CloudRain className="h-6 w-6" />;
+    if (lower.includes("clear") || lower.includes("sun")) return <Sun className="h-6 w-6" />;
     return <Cloud className="h-6 w-6" />;
-  };
-
-  const getRatingColor = (rating: string) => {
-    switch (rating) {
-      case "excellent": return "bg-green-500";
-      case "good": return "bg-emerald-400";
-      case "moderate": return "bg-yellow-500";
-      case "poor": return "bg-orange-500";
-      case "avoid": return "bg-red-500";
-      default: return "bg-gray-500";
-    }
   };
 
   const getRatingBadge = (rating: string) => {
@@ -164,6 +243,12 @@ const Weather = () => {
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const v = inputCity.trim();
+    if (v) fetchWeather(v);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -175,65 +260,63 @@ const Weather = () => {
               <h1 className="text-4xl font-bold text-primary">Weather Forecast</h1>
             </div>
             <p className="text-muted-foreground">
-              7-day forecast with AI-powered farming recommendations
-              {lastUpdated && (
+              Real-time 7-day forecast from Open-Meteo with farming recommendations
+              {fetchedAt && (
                 <span className="ml-2 text-xs">
-                  (Updated: {lastUpdated.toLocaleTimeString()})
+                  · Updated {fetchedAt.toLocaleTimeString()}
+                  {expiresAt && !stale && ` · Refreshes ${expiresAt.toLocaleTimeString()}`}
                 </span>
               )}
             </p>
           </div>
         </div>
 
-        <div className="mb-8 flex gap-4 max-w-md">
+        <form onSubmit={handleSubmit} className="mb-6 flex gap-2 max-w-md">
           <Input
             placeholder="Enter city or district..."
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && fetchWeather()}
+            value={inputCity}
+            onChange={(e) => setInputCity(e.target.value)}
           />
-          <Button onClick={fetchWeather} disabled={loading}>
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Search className="h-4 w-4 mr-2" />
-            )}
-            {loading ? "Loading..." : "Get Forecast"}
+          <Button type="submit" disabled={loading}>
+            <Search className="h-4 w-4 mr-2" />
+            Get Forecast
           </Button>
-        </div>
+        </form>
 
-        {!weatherData && !loading && (
-          <Card className="shadow-medium">
-            <CardContent className="py-12 text-center">
-              <Cloud className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-semibold mb-2">Get Weather Forecast</h3>
-              <p className="text-muted-foreground mb-6">
-                Enter your city or district and click "Get Forecast" to see 7-day weather predictions 
-                with personalized farming activity recommendations.
+        {stale && weatherData && (
+          <div className="mb-6 flex items-center gap-3 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-900">
+            <WifiOff className="h-5 w-5 text-yellow-600" />
+            <div>
+              <p className="font-medium text-yellow-900 dark:text-yellow-100">Showing cached weather</p>
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                Live data is temporarily unavailable. We'll refresh automatically when the service is back.
               </p>
-              <Button onClick={fetchWeather} size="lg">
-                <Sun className="h-5 w-5 mr-2" />
-                Fetch Weather for {city}
+            </div>
+          </div>
+        )}
+
+        {error && !weatherData && (
+          <Card className="shadow-medium border-destructive/40">
+            <CardContent className="py-12 text-center">
+              <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive" />
+              <h3 className="text-xl font-semibold mb-2">Weather unavailable</h3>
+              <p className="text-muted-foreground mb-6">{error}</p>
+              <Button onClick={() => fetchWeather(inputCity || city || "Pune")}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try again
               </Button>
             </CardContent>
           </Card>
         )}
 
-        {loading && (
-          <div className="text-center py-12">
-            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-            <p className="text-lg">Fetching weather forecast and farming recommendations...</p>
-            <p className="text-muted-foreground text-sm mt-2">This may take a few seconds</p>
-          </div>
-        )}
+        {loading && !weatherData && <WeatherSkeleton />}
 
-        {weatherData && !loading && (
+        {weatherData && (
           <>
-            {/* Alerts */}
             {weatherData.alerts && weatherData.alerts.length > 0 && (
               <div className="mb-6 space-y-2">
                 {weatherData.alerts.map((alert, idx) => (
-                  <div 
+                  <div
                     key={idx}
                     className={`flex items-center gap-3 p-4 rounded-lg ${
                       alert.severity === "critical" ? "bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900" :
@@ -251,53 +334,45 @@ const Weather = () => {
               </div>
             )}
 
-            {/* Current Weather */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
               <Card className="shadow-soft">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Thermometer className="h-4 w-4" />
-                    Temperature
+                    <Thermometer className="h-4 w-4" /> Temperature
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-primary">{weatherData.current.temperature}°C</div>
                   <p className="text-sm text-muted-foreground mt-1">{weatherData.current.condition}</p>
-                  {weatherData.current.feels_like && (
+                  {weatherData.current.feels_like !== undefined && (
                     <p className="text-xs text-muted-foreground">Feels like {weatherData.current.feels_like}°C</p>
                   )}
                 </CardContent>
               </Card>
-
               <Card className="shadow-soft">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    <Droplets className="h-4 w-4 mr-2" />
-                    Humidity
+                    <Droplets className="h-4 w-4 mr-2" /> Humidity
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-primary">{weatherData.current.humidity}%</div>
                 </CardContent>
               </Card>
-
               <Card className="shadow-soft">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    <Wind className="h-4 w-4 mr-2" />
-                    Wind Speed
+                    <Wind className="h-4 w-4 mr-2" /> Wind Speed
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-primary">{weatherData.current.wind_speed} km/h</div>
                 </CardContent>
               </Card>
-
               <Card className="shadow-soft">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Visibility
+                    <Eye className="h-4 w-4 mr-2" /> Visibility
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -306,12 +381,11 @@ const Weather = () => {
               </Card>
             </div>
 
-            {/* 7-Day Forecast */}
             <Card className="shadow-medium mb-8">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>7-Day Forecast for {weatherData.location}</span>
-                  <Button variant="outline" size="sm" onClick={fetchWeather} disabled={loading}>
+                  <Button variant="outline" size="sm" onClick={() => fetchWeather(city || inputCity)} disabled={loading}>
                     <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
                     Refresh
                   </Button>
@@ -319,10 +393,10 @@ const Weather = () => {
                 <CardDescription>Click a day to see detailed farming recommendations</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-3 md:grid-cols-7">
+                <div className="grid gap-3 grid-cols-2 md:grid-cols-7">
                   {weatherData.forecast.map((day, index) => (
-                    <Card 
-                      key={index} 
+                    <Card
+                      key={index}
                       className={`cursor-pointer transition-all hover:shadow-md ${
                         selectedDay === index ? "ring-2 ring-primary bg-primary/5" : "bg-muted/50"
                       }`}
@@ -330,10 +404,8 @@ const Weather = () => {
                     >
                       <CardContent className="pt-4 pb-4 px-3 text-center">
                         <p className="font-semibold text-sm mb-1">{day.day_name}</p>
-                        <p className="text-xs text-muted-foreground mb-2">{day.date}</p>
-                        <div className="flex justify-center mb-2">
-                          {getConditionIcon(day.condition)}
-                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">{day.date.slice(5)}</p>
+                        <div className="flex justify-center mb-2">{getConditionIcon(day.condition)}</div>
                         <p className="text-lg font-bold text-primary">{day.temp_high}°</p>
                         <p className="text-sm text-muted-foreground">{day.temp_low}°</p>
                         <div className="flex items-center justify-center gap-1 mt-2">
@@ -347,7 +419,6 @@ const Weather = () => {
               </CardContent>
             </Card>
 
-            {/* Farming Recommendations for Selected Day */}
             {weatherData.farming_recommendations[selectedDay] && (
               <Card className="shadow-medium mb-8">
                 <CardHeader>
@@ -374,8 +445,7 @@ const Weather = () => {
                           <p className="text-sm text-muted-foreground mb-2">{activity.reason}</p>
                           {activity.best_time && (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              Best time: {activity.best_time}
+                              <Clock className="h-3 w-3" /> Best time: {activity.best_time}
                             </div>
                           )}
                         </CardContent>
@@ -386,28 +456,84 @@ const Weather = () => {
               </Card>
             )}
 
-            {/* Weekly Summary */}
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200 dark:border-green-900 rounded-lg p-6">
               <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2 flex items-center gap-2">
-                <Sprout className="h-5 w-5" />
-                Weekly Farming Summary
+                <Sprout className="h-5 w-5" /> Weekly Farming Summary
               </h3>
-              <p className="text-sm text-green-800 dark:text-green-200">
-                {weatherData.weekly_summary}
-              </p>
+              <p className="text-sm text-green-800 dark:text-green-200">{weatherData.weekly_summary}</p>
             </div>
           </>
         )}
 
         <div className="mt-8 bg-muted/50 rounded-lg p-6">
           <p className="text-sm text-muted-foreground">
-            <strong>Note:</strong> Weather forecasts and farming recommendations are AI-generated estimates based on typical patterns. 
-            Actual conditions may vary. Always consult local meteorological services and agricultural experts for critical decisions.
+            <strong>Data source:</strong> Live weather from Open-Meteo, cached for 1 hour. Farming
+            recommendations are derived from real forecast values (rain probability, wind, humidity,
+            temperature). Always confirm critical decisions with local meteorological services.
           </p>
         </div>
       </div>
     </div>
   );
 };
+
+const WeatherSkeleton = () => (
+  <>
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i} className="shadow-soft">
+          <CardHeader className="pb-3"><Skeleton className="h-4 w-24" /></CardHeader>
+          <CardContent>
+            <Skeleton className="h-9 w-20 mb-2" />
+            <Skeleton className="h-3 w-28" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+    <Card className="shadow-medium mb-8">
+      <CardHeader>
+        <Skeleton className="h-6 w-64 mb-2" />
+        <Skeleton className="h-4 w-80" />
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-7">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <Card key={i} className="bg-muted/50">
+              <CardContent className="pt-4 pb-4 px-3 text-center space-y-2">
+                <Skeleton className="h-4 w-12 mx-auto" />
+                <Skeleton className="h-3 w-10 mx-auto" />
+                <Skeleton className="h-6 w-6 mx-auto rounded-full" />
+                <Skeleton className="h-5 w-10 mx-auto" />
+                <Skeleton className="h-3 w-8 mx-auto" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+    <Card className="shadow-medium mb-8">
+      <CardHeader>
+        <Skeleton className="h-6 w-72 mb-2" />
+        <Skeleton className="h-4 w-96" />
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-4 md:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="border-l-4 border-l-muted">
+              <CardContent className="pt-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-5 w-16" />
+                </div>
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-3 w-2/3" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  </>
+);
 
 export default Weather;
