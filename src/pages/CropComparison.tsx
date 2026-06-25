@@ -352,6 +352,7 @@ const CropComparison = () => {
                     <button 
                       className="ml-1 hover:text-destructive"
                       onClick={() => toggleCrop(crop)}
+                      aria-label={`Remove ${crop} from comparison`}
                     >
                       ×
                     </button>

@@ -1,0 +1,18 @@
+# Krishi Setu
+
+> Agricultural services platform for Maharashtra farmers: equipment rental, live market prices, weather forecasts, AI-powered crop advice, and government schemes.
+
+## Pages
+
+- [Home](/): Overview of Krishi Setu services for farmers and equipment owners.
+- [Equipment](/equipment): Browse and rent farming equipment from verified owners.
+- [Market Prices](/market-prices): Live APMC crop market prices across districts.
+- [Weather](/weather): District-level weather and 7-day farming forecasts.
+- [Crop Calendar](/crop-calendar): Seasonal sowing, irrigation, and harvest schedules.
+- [Compare Crops](/crop-comparison): Side-by-side suitability comparison for crops.
+- [Government Schemes](/government-schemes): Discover and check eligibility for farmer schemes.
+- [Helpline](/helpline): Support and assistance for platform users.
+
+## Optional
+
+- [Sign in](/auth): Authentication for farmers, equipment owners, and admins.
