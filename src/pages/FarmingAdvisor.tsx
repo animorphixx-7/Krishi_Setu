@@ -46,7 +46,7 @@ const FarmingAdvisor = () => {
       .limit(10);
     setHistoryLoading(false);
     if (error) return;
-    setHistory((data as HistoryRow[]) ?? []);
+    setHistory(((data as unknown) as HistoryRow[]) ?? []);
   };
 
   useEffect(() => { loadHistory(); }, []);
