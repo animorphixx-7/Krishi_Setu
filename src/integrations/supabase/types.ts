@@ -90,6 +90,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bookings_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment_owner_private"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bookings_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -416,6 +423,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reviews_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment_owner_private"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reviews_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -447,7 +461,32 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      equipment_owner_private: {
+        Row: {
+          contact_number: string | null
+          id: string | null
+          owner_id: string | null
+        }
+        Insert: {
+          contact_number?: string | null
+          id?: string | null
+          owner_id?: string | null
+        }
+        Update: {
+          contact_number?: string | null
+          id?: string | null
+          owner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_equipment_public: { Args: { equipment_id?: string }; Returns: Json[] }
@@ -456,6 +495,10 @@ export type Database = {
         Returns: string
       }
       get_own_profile: { Args: never; Returns: Json }
+      get_owner_equipment_contact: {
+        Args: { _equipment_id: string }
+        Returns: string
+      }
       get_safe_profile: { Args: { profile_id: string }; Returns: Json }
       has_role: {
         Args: {
