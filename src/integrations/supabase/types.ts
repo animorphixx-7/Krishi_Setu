@@ -747,6 +747,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      log_auth_event: {
+        Args: { _description?: string; _event_type: string }
+        Returns: undefined
+      }
       send_notification: {
         Args: {
           _message: string

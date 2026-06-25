@@ -28,11 +28,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
           setTimeout(() => {
             fetchUserRole(session.user.id);
           }, 0);
+          if (event === "SIGNED_IN") {
+            setTimeout(() => {
+              supabase.rpc("log_auth_event", { _event_type: "login", _description: "User signed in" })
+                .then(({ error }) => { if (error) console.debug("auth log:", error.message); });
+            }, 0);
+          }
         } else {
           setUserRole(null);
         }
@@ -118,6 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
+      try { await supabase.rpc("log_auth_event", { _event_type: "logout", _description: "User signed out" }); } catch {}
       await supabase.auth.signOut();
       setUserRole(null);
       toast.success("Logged out successfully");

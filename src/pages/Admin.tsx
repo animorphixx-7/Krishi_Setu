@@ -11,8 +11,11 @@ import { useToast } from "@/hooks/use-toast";
 import {
   CheckCircle, XCircle, Loader2,
   IndianRupee, CalendarCheck, Users, Tractor,
-  TrendingUp, BarChart3
+  TrendingUp, BarChart3, Activity, Search
 } from "lucide-react";
+import PlatformAnalytics from "@/components/admin/PlatformAnalytics";
+import AuditLogs from "@/components/admin/AuditLogs";
+import GlobalSearch from "@/components/admin/GlobalSearch";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend
@@ -222,14 +225,30 @@ const Admin = () => {
         <h1 className="text-4xl font-bold text-foreground mb-8">Admin Panel</h1>
 
         <Tabs defaultValue="analytics" className="w-full">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="analytics">
               <BarChart3 className="h-4 w-4 mr-2" />
-              Analytics
+              Bookings Analytics
+            </TabsTrigger>
+            <TabsTrigger value="platform">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Platform Analytics
+            </TabsTrigger>
+            <TabsTrigger value="audit">
+              <Activity className="h-4 w-4 mr-2" />
+              Audit Logs
+            </TabsTrigger>
+            <TabsTrigger value="search">
+              <Search className="h-4 w-4 mr-2" />
+              Search
             </TabsTrigger>
             <TabsTrigger value="equipment">Equipment Approval</TabsTrigger>
             <TabsTrigger value="bookings">Manage Bookings</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="platform" className="mt-6"><PlatformAnalytics /></TabsContent>
+          <TabsContent value="audit" className="mt-6"><AuditLogs /></TabsContent>
+          <TabsContent value="search" className="mt-6"><GlobalSearch /></TabsContent>
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="mt-6 space-y-6">
