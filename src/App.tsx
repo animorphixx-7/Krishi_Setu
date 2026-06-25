@@ -21,6 +21,8 @@ import Profile from "./pages/Profile";
 import CropDoctor from "./pages/CropDoctor";
 import CropRecommendation from "./pages/CropRecommendation";
 import CommunityForum from "./pages/CommunityForum";
+import AIChat from "./pages/AIChat";
+import FarmingAdvisor from "./pages/FarmingAdvisor";
 import NotFound from "./pages/NotFound";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -58,6 +60,8 @@ const App = () => (
             <Route path="/my-equipment" element={<ProtectedRoute><MyEquipment /></ProtectedRoute>} />
             <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/ai-chat" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
+            <Route path="/farming-advisor" element={<ProtectedRoute><FarmingAdvisor /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
