@@ -225,7 +225,6 @@ const Admin = () => {
         <h1 className="text-4xl font-bold text-foreground mb-8">Admin Panel</h1>
 
         <Tabs defaultValue="analytics" className="w-full">
-          <TabsList>
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="analytics">
               <BarChart3 className="h-4 w-4 mr-2" />
