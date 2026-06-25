@@ -19,6 +19,7 @@ import MyEquipment from "./pages/MyEquipment";
 import MyBookings from "./pages/MyBookings";
 import Profile from "./pages/Profile";
 import CropDoctor from "./pages/CropDoctor";
+import CropRecommendation from "./pages/CropRecommendation";
 import CommunityForum from "./pages/CommunityForum";
 import NotFound from "./pages/NotFound";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/weather" element={<Weather />} />
             <Route path="/crop-calendar" element={<CropCalendar />} />
             <Route path="/crop-comparison" element={<CropComparison />} />
+            <Route path="/crop-recommendation" element={<ProtectedRoute><CropRecommendation /></ProtectedRoute>} />
             <Route path="/government-schemes" element={<GovernmentSchemes />} />
             <Route path="/helpline" element={<Helpline />} />
             <Route path="/crop-doctor" element={<ProtectedRoute><CropDoctor /></ProtectedRoute>} />

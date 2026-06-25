@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tractor, ShoppingCart, Star, TrendingUp, Cloud, MessageSquare, Shield } from "lucide-react";
+import { Tractor, ShoppingCart, Star, TrendingUp, Cloud, MessageSquare, Shield, Sprout } from "lucide-react";
 import Navbar from "@/components/Navbar";
 const heroImage = "/hero-farming.jpg";
 
@@ -31,6 +31,11 @@ const Index = () => {
       icon: Cloud,
       title: "Weather Forecast",
       description: "Plan your farming activities with accurate weather predictions",
+    },
+    {
+      icon: Sprout,
+      title: "Crop Recommendation",
+      description: "AI-powered crop suggestions based on your soil, season, and water availability",
     },
     {
       icon: MessageSquare,
