@@ -19,6 +19,7 @@ import MyEquipment from "./pages/MyEquipment";
 import MyBookings from "./pages/MyBookings";
 import Profile from "./pages/Profile";
 import CropDoctor from "./pages/CropDoctor";
+import CropRecommendation from "./pages/CropRecommendation";
 import CommunityForum from "./pages/CommunityForum";
 import NotFound from "./pages/NotFound";
 import ForgotPassword from "./pages/ForgotPassword";
