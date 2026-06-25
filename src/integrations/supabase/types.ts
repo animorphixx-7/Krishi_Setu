@@ -47,6 +47,74 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          language: string
+          last_message_at: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language?: string
+          last_message_at?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string
+          last_message_at?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+          tokens: number | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+          tokens?: number | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          tokens?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           created_at: string | null
@@ -105,6 +173,102 @@ export type Database = {
           },
         ]
       }
+      crop_recommendations: {
+        Row: {
+          created_at: string
+          district: string | null
+          farm_size: number | null
+          id: string
+          inputs: Json
+          irrigation_type: string | null
+          recommendations: Json
+          season: string | null
+          soil_type: string | null
+          top_crop: string | null
+          updated_at: string
+          user_id: string
+          water_availability: string | null
+          weather_snapshot: Json | null
+        }
+        Insert: {
+          created_at?: string
+          district?: string | null
+          farm_size?: number | null
+          id?: string
+          inputs?: Json
+          irrigation_type?: string | null
+          recommendations: Json
+          season?: string | null
+          soil_type?: string | null
+          top_crop?: string | null
+          updated_at?: string
+          user_id: string
+          water_availability?: string | null
+          weather_snapshot?: Json | null
+        }
+        Update: {
+          created_at?: string
+          district?: string | null
+          farm_size?: number | null
+          id?: string
+          inputs?: Json
+          irrigation_type?: string | null
+          recommendations?: Json
+          season?: string | null
+          soil_type?: string | null
+          top_crop?: string | null
+          updated_at?: string
+          user_id?: string
+          water_availability?: string | null
+          weather_snapshot?: Json | null
+        }
+        Relationships: []
+      }
+      disease_scans: {
+        Row: {
+          confidence: string | null
+          created_at: string
+          diagnosis: Json
+          disease_name: string | null
+          health_status: string | null
+          id: string
+          image_url: string | null
+          language: string | null
+          plant_name: string | null
+          severity: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: string | null
+          created_at?: string
+          diagnosis: Json
+          disease_name?: string | null
+          health_status?: string | null
+          id?: string
+          image_url?: string | null
+          language?: string | null
+          plant_name?: string | null
+          severity?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence?: string | null
+          created_at?: string
+          diagnosis?: Json
+          disease_name?: string | null
+          health_status?: string | null
+          id?: string
+          image_url?: string | null
+          language?: string | null
+          plant_name?: string | null
+          severity?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       equipment: {
         Row: {
           category: string
@@ -160,6 +324,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      farming_advice: {
+        Row: {
+          advice_type: string
+          created_at: string
+          crop: string | null
+          crop_stage: string | null
+          district: string | null
+          id: string
+          payload: Json
+          updated_at: string
+          user_id: string
+          weather_snapshot: Json | null
+        }
+        Insert: {
+          advice_type: string
+          created_at?: string
+          crop?: string | null
+          crop_stage?: string | null
+          district?: string | null
+          id?: string
+          payload: Json
+          updated_at?: string
+          user_id: string
+          weather_snapshot?: Json | null
+        }
+        Update: {
+          advice_type?: string
+          created_at?: string
+          crop?: string | null
+          crop_stage?: string | null
+          district?: string | null
+          id?: string
+          payload?: Json
+          updated_at?: string
+          user_id?: string
+          weather_snapshot?: Json | null
+        }
+        Relationships: []
       }
       forum_comments: {
         Row: {

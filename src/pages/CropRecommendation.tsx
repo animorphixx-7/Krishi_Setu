@@ -86,7 +86,28 @@ export default function CropRecommendation() {
       if ((data as RecommendationResponse)?.error) {
         toast.error((data as RecommendationResponse).error!);
       } else {
-        setResult(data as RecommendationResponse);
+        const rec = data as RecommendationResponse;
+        setResult(rec);
+        // Persist recommendation history (best-effort)
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const recs: any = (rec as any).recommendations ?? (rec as any).crops ?? rec;
+            const top = Array.isArray(recs) ? (recs[0]?.name || recs[0]?.crop || null) : null;
+            await supabase.from("crop_recommendations").insert({
+              user_id: user.id,
+              district: location.trim(),
+              soil_type: soil.toLowerCase(),
+              farm_size: Number(farmSize),
+              irrigation_type: water.toLowerCase(),
+              season: season.toLowerCase(),
+              water_availability: water.toLowerCase(),
+              inputs: { location, soil, season, water, farmSize: Number(farmSize) },
+              recommendations: rec as any,
+              top_crop: top,
+            });
+          }
+        } catch (err) { console.error("save recommendation failed:", err); }
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to fetch recommendations";

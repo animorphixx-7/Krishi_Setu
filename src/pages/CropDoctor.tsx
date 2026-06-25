@@ -84,6 +84,21 @@ const CropDoctor = () => {
       } else {
         setDiagnosis(data as Diagnosis);
         toast({ title: "Analysis Complete!", description: `Identified: ${data.plant_name}` });
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from("disease_scans").insert({
+              user_id: user.id,
+              plant_name: data.plant_name ?? null,
+              disease_name: data.disease_name ?? null,
+              health_status: data.health_status ?? null,
+              confidence: data.confidence ?? null,
+              severity: data.severity ?? null,
+              language,
+              diagnosis: data,
+            });
+          }
+        } catch (err) { console.error("save scan failed:", err); }
       }
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Failed to analyze image", variant: "destructive" });
