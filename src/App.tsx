@@ -21,6 +21,10 @@ import Profile from "./pages/Profile";
 import CropDoctor from "./pages/CropDoctor";
 import CommunityForum from "./pages/CommunityForum";
 import NotFound from "./pages/NotFound";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import VerifyEmail from "./pages/VerifyEmail";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import MobileBottomNav from "@/components/MobileBottomNav";
 
 const queryClient = new QueryClient();
@@ -35,6 +39,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/equipment" element={<Equipment />} />
             <Route path="/equipment/:id" element={<EquipmentDetail />} />
             <Route path="/market-prices" element={<MarketPrices />} />
@@ -43,12 +50,12 @@ const App = () => (
             <Route path="/crop-comparison" element={<CropComparison />} />
             <Route path="/government-schemes" element={<GovernmentSchemes />} />
             <Route path="/helpline" element={<Helpline />} />
-            <Route path="/crop-doctor" element={<CropDoctor />} />
-            <Route path="/community" element={<CommunityForum />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/my-equipment" element={<MyEquipment />} />
-            <Route path="/my-bookings" element={<MyBookings />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/crop-doctor" element={<ProtectedRoute><CropDoctor /></ProtectedRoute>} />
+            <Route path="/community" element={<ProtectedRoute><CommunityForum /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute requireRole="admin"><Admin /></ProtectedRoute>} />
+            <Route path="/my-equipment" element={<ProtectedRoute><MyEquipment /></ProtectedRoute>} />
+            <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
