@@ -49,6 +49,7 @@ const App = () => (
             <Route path="/weather" element={<Weather />} />
             <Route path="/crop-calendar" element={<CropCalendar />} />
             <Route path="/crop-comparison" element={<CropComparison />} />
+            <Route path="/crop-recommendation" element={<ProtectedRoute><CropRecommendation /></ProtectedRoute>} />
             <Route path="/government-schemes" element={<GovernmentSchemes />} />
             <Route path="/helpline" element={<Helpline />} />
             <Route path="/crop-doctor" element={<ProtectedRoute><CropDoctor /></ProtectedRoute>} />
