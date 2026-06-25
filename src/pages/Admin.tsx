@@ -11,11 +11,15 @@ import { useToast } from "@/hooks/use-toast";
 import {
   CheckCircle, XCircle, Loader2,
   IndianRupee, CalendarCheck, Users, Tractor,
-  TrendingUp, BarChart3, Activity, Search
+  TrendingUp, BarChart3, Activity, Search,
+  FileDown, HeartPulse, FlaskConical,
 } from "lucide-react";
 import PlatformAnalytics from "@/components/admin/PlatformAnalytics";
 import AuditLogs from "@/components/admin/AuditLogs";
 import GlobalSearch from "@/components/admin/GlobalSearch";
+import ReportExport from "@/components/admin/ReportExport";
+import SystemHealth from "@/components/admin/SystemHealth";
+import TestingSuite from "@/components/admin/TestingSuite";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend
@@ -242,6 +246,18 @@ const Admin = () => {
               <Search className="h-4 w-4 mr-2" />
               Search
             </TabsTrigger>
+            <TabsTrigger value="reports">
+              <FileDown className="h-4 w-4 mr-2" />
+              Reports
+            </TabsTrigger>
+            <TabsTrigger value="health">
+              <HeartPulse className="h-4 w-4 mr-2" />
+              System Health
+            </TabsTrigger>
+            <TabsTrigger value="tests">
+              <FlaskConical className="h-4 w-4 mr-2" />
+              Tests
+            </TabsTrigger>
             <TabsTrigger value="equipment">Equipment Approval</TabsTrigger>
             <TabsTrigger value="bookings">Manage Bookings</TabsTrigger>
           </TabsList>
@@ -249,6 +265,10 @@ const Admin = () => {
           <TabsContent value="platform" className="mt-6"><PlatformAnalytics /></TabsContent>
           <TabsContent value="audit" className="mt-6"><AuditLogs /></TabsContent>
           <TabsContent value="search" className="mt-6"><GlobalSearch /></TabsContent>
+          <TabsContent value="reports" className="mt-6"><ReportExport /></TabsContent>
+          <TabsContent value="health" className="mt-6"><SystemHealth /></TabsContent>
+          <TabsContent value="tests" className="mt-6"><TestingSuite /></TabsContent>
+
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="mt-6 space-y-6">
