@@ -126,22 +126,72 @@ const Auth = () => {
 
   const handleGoogle = async () => {
     setLoading(true);
+    setGoogleError(null);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
       if (result.error) {
-        toast.error("Google sign-in failed. Please try again.");
+        const e: any = result.error;
+        setGoogleError({
+          stage: "lovable.auth.signInWithOAuth (initiate)",
+          status: e?.status ?? e?.statusCode,
+          code: e?.code ?? e?.name,
+          message: e?.message ?? String(e),
+          url: e?.url,
+          stack: e?.stack,
+          raw: safeStringify(e),
+        });
+        console.error("[GoogleAuth] initiate error", e);
+        toast.error("Google sign-in failed — see details on page");
         setLoading(false);
         return;
       }
       if (result.redirected) return;
       navigate("/");
     } catch (err: any) {
+      setGoogleError({
+        stage: "handleGoogle (exception thrown)",
+        status: err?.status ?? err?.statusCode,
+        code: err?.code ?? err?.name,
+        message: err?.message ?? String(err),
+        url: err?.url,
+        stack: err?.stack,
+        raw: safeStringify(err),
+      });
+      console.error("[GoogleAuth] exception", err);
       toast.error(err?.message ?? "Google sign-in failed");
       setLoading(false);
     }
   };
+
+  const safeStringify = (v: unknown) => {
+    try {
+      return JSON.stringify(v, Object.getOwnPropertyNames(v as object), 2);
+    } catch {
+      return String(v);
+    }
+  };
+
+  const copyErrorDetails = async () => {
+    if (!googleError) return;
+    const text = [
+      `Stage: ${googleError.stage}`,
+      googleError.status !== undefined ? `Status: ${googleError.status}` : "",
+      googleError.code ? `Code: ${googleError.code}` : "",
+      `Message: ${googleError.message}`,
+      googleError.url ? `URL: ${googleError.url}` : "",
+      googleError.stack ? `\nStack:\n${googleError.stack}` : "",
+      googleError.raw ? `\nRaw:\n${googleError.raw}` : "",
+    ].filter(Boolean).join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Error details copied");
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted to-background p-4">
