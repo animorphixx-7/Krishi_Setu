@@ -8,10 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Tractor } from "lucide-react";
+import { Tractor, AlertCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { lovable } from "@/integrations/lovable/index";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
