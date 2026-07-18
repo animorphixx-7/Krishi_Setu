@@ -192,6 +192,54 @@ const Auth = () => {
     }
   };
 
+  const downloadErrorReport = () => {
+    if (!googleError) return;
+    const report = {
+      generatedAt: new Date().toISOString(),
+      app: "Krishi Setu",
+      page: "/auth",
+      provider: "google",
+      location: {
+        href: window.location.href,
+        origin: window.location.origin,
+        pathname: window.location.pathname,
+        search: window.location.search,
+        hash: window.location.hash,
+      },
+      userAgent: navigator.userAgent,
+      error: {
+        stage: googleError.stage,
+        status: googleError.status ?? null,
+        code: googleError.code ?? null,
+        message: googleError.message,
+        url: googleError.url ?? null,
+        stack: googleError.stack ?? null,
+        raw: googleError.raw ? tryParseJSON(googleError.raw) : null,
+      },
+    };
+    try {
+      const blob = new Blob([JSON.stringify(report, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      a.href = url;
+      a.download = `google-auth-error-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success("Error report downloaded");
+    } catch {
+      toast.error("Download failed");
+    }
+  };
+
+  const tryParseJSON = (s: string) => {
+    try { return JSON.parse(s); } catch { return s; }
+  };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted to-background p-4">
