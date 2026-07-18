@@ -28,6 +28,15 @@ const Auth = () => {
   const navigate = useNavigate();
   const { user, signIn, signUp } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<{
+    stage: string;
+    status?: number | string;
+    code?: string;
+    message: string;
+    url?: string;
+    stack?: string;
+    raw?: string;
+  } | null>(null);
 
   // Login form
   const [loginEmail, setLoginEmail] = useState("");
