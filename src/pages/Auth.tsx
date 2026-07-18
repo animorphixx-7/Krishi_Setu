@@ -204,6 +204,52 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {googleError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle className="flex items-center justify-between gap-2">
+                <span>Google sign-in error</span>
+                <button
+                  type="button"
+                  onClick={copyErrorDetails}
+                  className="inline-flex items-center gap-1 text-xs font-normal underline"
+                >
+                  <Copy className="h-3 w-3" /> Copy
+                </button>
+              </AlertTitle>
+              <AlertDescription>
+                <div className="mt-2 space-y-1 text-xs">
+                  <div><span className="font-semibold">Stage:</span> {googleError.stage}</div>
+                  {googleError.status !== undefined && (
+                    <div><span className="font-semibold">Status:</span> {String(googleError.status)}</div>
+                  )}
+                  {googleError.code && (
+                    <div><span className="font-semibold">Code:</span> {googleError.code}</div>
+                  )}
+                  <div><span className="font-semibold">Message:</span> {googleError.message}</div>
+                  {googleError.url && (
+                    <div className="break-all"><span className="font-semibold">URL:</span> {googleError.url}</div>
+                  )}
+                  {googleError.stack && (
+                    <details className="mt-1">
+                      <summary className="cursor-pointer font-semibold">Stack trace</summary>
+                      <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-background/40 p-2 text-[10px] leading-tight">
+{googleError.stack}
+                      </pre>
+                    </details>
+                  )}
+                  {googleError.raw && (
+                    <details className="mt-1">
+                      <summary className="cursor-pointer font-semibold">Raw error object</summary>
+                      <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-background/40 p-2 text-[10px] leading-tight">
+{googleError.raw}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
