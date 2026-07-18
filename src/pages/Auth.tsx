@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Tractor, AlertCircle, Copy } from "lucide-react";
+import { Tractor, AlertCircle, Copy, Download } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { lovable } from "@/integrations/lovable/index";
@@ -192,6 +192,54 @@ const Auth = () => {
     }
   };
 
+  const downloadErrorReport = () => {
+    if (!googleError) return;
+    const report = {
+      generatedAt: new Date().toISOString(),
+      app: "Krishi Setu",
+      page: "/auth",
+      provider: "google",
+      location: {
+        href: window.location.href,
+        origin: window.location.origin,
+        pathname: window.location.pathname,
+        search: window.location.search,
+        hash: window.location.hash,
+      },
+      userAgent: navigator.userAgent,
+      error: {
+        stage: googleError.stage,
+        status: googleError.status ?? null,
+        code: googleError.code ?? null,
+        message: googleError.message,
+        url: googleError.url ?? null,
+        stack: googleError.stack ?? null,
+        raw: googleError.raw ? tryParseJSON(googleError.raw) : null,
+      },
+    };
+    try {
+      const blob = new Blob([JSON.stringify(report, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      a.href = url;
+      a.download = `google-auth-error-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success("Error report downloaded");
+    } catch {
+      toast.error("Download failed");
+    }
+  };
+
+  const tryParseJSON = (s: string) => {
+    try { return JSON.parse(s); } catch { return s; }
+  };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted to-background p-4">
@@ -209,13 +257,22 @@ const Auth = () => {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle className="flex items-center justify-between gap-2">
                 <span>Google sign-in error</span>
-                <button
-                  type="button"
-                  onClick={copyErrorDetails}
-                  className="inline-flex items-center gap-1 text-xs font-normal underline"
-                >
-                  <Copy className="h-3 w-3" /> Copy
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={copyErrorDetails}
+                    className="inline-flex items-center gap-1 text-xs font-normal underline"
+                  >
+                    <Copy className="h-3 w-3" /> Copy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={downloadErrorReport}
+                    className="inline-flex items-center gap-1 text-xs font-normal underline"
+                  >
+                    <Download className="h-3 w-3" /> Download JSON
+                  </button>
+                </div>
               </AlertTitle>
               <AlertDescription>
                 <div className="mt-2 space-y-1 text-xs">
