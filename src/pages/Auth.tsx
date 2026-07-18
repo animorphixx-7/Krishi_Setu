@@ -257,13 +257,22 @@ const Auth = () => {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle className="flex items-center justify-between gap-2">
                 <span>Google sign-in error</span>
-                <button
-                  type="button"
-                  onClick={copyErrorDetails}
-                  className="inline-flex items-center gap-1 text-xs font-normal underline"
-                >
-                  <Copy className="h-3 w-3" /> Copy
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={copyErrorDetails}
+                    className="inline-flex items-center gap-1 text-xs font-normal underline"
+                  >
+                    <Copy className="h-3 w-3" /> Copy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={downloadErrorReport}
+                    className="inline-flex items-center gap-1 text-xs font-normal underline"
+                  >
+                    <Download className="h-3 w-3" /> Download JSON
+                  </button>
+                </div>
               </AlertTitle>
               <AlertDescription>
                 <div className="mt-2 space-y-1 text-xs">
