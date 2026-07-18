@@ -5,14 +5,29 @@ import autoTable from "jspdf-autotable";
 
 export type Row = Record<string, string | number | null | undefined>;
 
+// Neutralize spreadsheet formula injection: prefix risky leading chars with `'`
+// so Excel/Sheets/Numbers treat the cell as text rather than a formula/command.
+const FORMULA_TRIGGERS = /^[=+\-@\t\r]/;
+function sanitizeCell(v: Row[string]): Row[string] {
+  if (typeof v !== "string") return v;
+  return FORMULA_TRIGGERS.test(v) ? `'${v}` : v;
+}
+function sanitizeRows(rows: Row[]): Row[] {
+  return rows.map((r) => {
+    const out: Row = {};
+    for (const k of Object.keys(r)) out[k] = sanitizeCell(r[k]);
+    return out;
+  });
+}
+
 export function downloadCSV(filename: string, rows: Row[]) {
-  const csv = Papa.unparse(rows);
+  const csv = Papa.unparse(sanitizeRows(rows));
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   triggerDownload(blob, filename.endsWith(".csv") ? filename : `${filename}.csv`);
 }
 
 export function downloadXLSX(filename: string, rows: Row[], sheetName = "Report") {
-  const ws = XLSX.utils.json_to_sheet(rows);
+  const ws = XLSX.utils.json_to_sheet(sanitizeRows(rows));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
   const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
