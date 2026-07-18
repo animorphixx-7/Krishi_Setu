@@ -54,9 +54,36 @@ const Auth = () => {
     }
   }, [user, navigate]);
 
+  useEffect(() => {
+    // Capture OAuth errors returned in the URL (hash or query) after Google callback
+    const hash = window.location.hash.startsWith("#")
+      ? window.location.hash.slice(1)
+      : window.location.hash;
+    const hashParams = new URLSearchParams(hash);
+    const queryParams = new URLSearchParams(window.location.search);
+    const err =
+      hashParams.get("error") ||
+      hashParams.get("error_code") ||
+      queryParams.get("error") ||
+      queryParams.get("error_code");
+    if (err) {
+      const desc =
+        hashParams.get("error_description") ||
+        queryParams.get("error_description") ||
+        "";
+      setGoogleError({
+        stage: "OAuth callback (provider redirect)",
+        code: err,
+        status: hashParams.get("error_code") || queryParams.get("error_code") || undefined,
+        message: decodeURIComponent(desc.replace(/\+/g, " ")) || err,
+        url: window.location.href,
+      });
+    }
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       loginSchema.parse({ email: loginEmail, password: loginPassword });
       setLoading(true);
