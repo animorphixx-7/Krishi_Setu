@@ -8,10 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Tractor } from "lucide-react";
+import { Tractor, AlertCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { lovable } from "@/integrations/lovable/index";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -27,6 +28,15 @@ const Auth = () => {
   const navigate = useNavigate();
   const { user, signIn, signUp } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<{
+    stage: string;
+    status?: number | string;
+    code?: string;
+    message: string;
+    url?: string;
+    stack?: string;
+    raw?: string;
+  } | null>(null);
 
   // Login form
   const [loginEmail, setLoginEmail] = useState("");
@@ -44,9 +54,36 @@ const Auth = () => {
     }
   }, [user, navigate]);
 
+  useEffect(() => {
+    // Capture OAuth errors returned in the URL (hash or query) after Google callback
+    const hash = window.location.hash.startsWith("#")
+      ? window.location.hash.slice(1)
+      : window.location.hash;
+    const hashParams = new URLSearchParams(hash);
+    const queryParams = new URLSearchParams(window.location.search);
+    const err =
+      hashParams.get("error") ||
+      hashParams.get("error_code") ||
+      queryParams.get("error") ||
+      queryParams.get("error_code");
+    if (err) {
+      const desc =
+        hashParams.get("error_description") ||
+        queryParams.get("error_description") ||
+        "";
+      setGoogleError({
+        stage: "OAuth callback (provider redirect)",
+        code: err,
+        status: hashParams.get("error_code") || queryParams.get("error_code") || undefined,
+        message: decodeURIComponent(desc.replace(/\+/g, " ")) || err,
+        url: window.location.href,
+      });
+    }
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       loginSchema.parse({ email: loginEmail, password: loginPassword });
       setLoading(true);
@@ -89,22 +126,72 @@ const Auth = () => {
 
   const handleGoogle = async () => {
     setLoading(true);
+    setGoogleError(null);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
       if (result.error) {
-        toast.error("Google sign-in failed. Please try again.");
+        const e: any = result.error;
+        setGoogleError({
+          stage: "lovable.auth.signInWithOAuth (initiate)",
+          status: e?.status ?? e?.statusCode,
+          code: e?.code ?? e?.name,
+          message: e?.message ?? String(e),
+          url: e?.url,
+          stack: e?.stack,
+          raw: safeStringify(e),
+        });
+        console.error("[GoogleAuth] initiate error", e);
+        toast.error("Google sign-in failed — see details on page");
         setLoading(false);
         return;
       }
       if (result.redirected) return;
       navigate("/");
     } catch (err: any) {
+      setGoogleError({
+        stage: "handleGoogle (exception thrown)",
+        status: err?.status ?? err?.statusCode,
+        code: err?.code ?? err?.name,
+        message: err?.message ?? String(err),
+        url: err?.url,
+        stack: err?.stack,
+        raw: safeStringify(err),
+      });
+      console.error("[GoogleAuth] exception", err);
       toast.error(err?.message ?? "Google sign-in failed");
       setLoading(false);
     }
   };
+
+  const safeStringify = (v: unknown) => {
+    try {
+      return JSON.stringify(v, Object.getOwnPropertyNames(v as object), 2);
+    } catch {
+      return String(v);
+    }
+  };
+
+  const copyErrorDetails = async () => {
+    if (!googleError) return;
+    const text = [
+      `Stage: ${googleError.stage}`,
+      googleError.status !== undefined ? `Status: ${googleError.status}` : "",
+      googleError.code ? `Code: ${googleError.code}` : "",
+      `Message: ${googleError.message}`,
+      googleError.url ? `URL: ${googleError.url}` : "",
+      googleError.stack ? `\nStack:\n${googleError.stack}` : "",
+      googleError.raw ? `\nRaw:\n${googleError.raw}` : "",
+    ].filter(Boolean).join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Error details copied");
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted to-background p-4">
@@ -117,6 +204,52 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {googleError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle className="flex items-center justify-between gap-2">
+                <span>Google sign-in error</span>
+                <button
+                  type="button"
+                  onClick={copyErrorDetails}
+                  className="inline-flex items-center gap-1 text-xs font-normal underline"
+                >
+                  <Copy className="h-3 w-3" /> Copy
+                </button>
+              </AlertTitle>
+              <AlertDescription>
+                <div className="mt-2 space-y-1 text-xs">
+                  <div><span className="font-semibold">Stage:</span> {googleError.stage}</div>
+                  {googleError.status !== undefined && (
+                    <div><span className="font-semibold">Status:</span> {String(googleError.status)}</div>
+                  )}
+                  {googleError.code && (
+                    <div><span className="font-semibold">Code:</span> {googleError.code}</div>
+                  )}
+                  <div><span className="font-semibold">Message:</span> {googleError.message}</div>
+                  {googleError.url && (
+                    <div className="break-all"><span className="font-semibold">URL:</span> {googleError.url}</div>
+                  )}
+                  {googleError.stack && (
+                    <details className="mt-1">
+                      <summary className="cursor-pointer font-semibold">Stack trace</summary>
+                      <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-background/40 p-2 text-[10px] leading-tight">
+{googleError.stack}
+                      </pre>
+                    </details>
+                  )}
+                  {googleError.raw && (
+                    <details className="mt-1">
+                      <summary className="cursor-pointer font-semibold">Raw error object</summary>
+                      <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-background/40 p-2 text-[10px] leading-tight">
+{googleError.raw}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
