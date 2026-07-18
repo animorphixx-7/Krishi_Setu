@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Tractor, AlertCircle, Copy } from "lucide-react";
+import { Tractor, AlertCircle, Copy, Download } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { lovable } from "@/integrations/lovable/index";
